@@ -254,8 +254,9 @@ export const DungeonScene = () => {
         level, position, direction,
         openMirror, openDoors, toggleDoor,
         openTeleporters, visibleTexts, activateWallSensor,
-        creatures, floorItems, pickupItem, damageEvents,
+        creatures, floorItems, pickupItem, damageEvents, party,
     } = useStore();
+    const recruitedIds = useMemo(() => new Set(party.map(c => c.id)), [party]);
     const map = getGameMap(level);
 
     // Collect wall-button sensors visible this level
@@ -314,10 +315,13 @@ export const DungeonScene = () => {
                     {map.tiles.map((row, y) =>
                         row.map((tile, x) => {
                             const renderType = getRenderType(tile, level);
-                            const champion: Champion | null =
+                            const mirrorChampion: Champion | null =
                                 renderType === 'Mirror'
                                     ? (MIRROR_WALL_MAP.get(`${x},${y}`) ?? null)
                                     : null;
+                            const champion = mirrorChampion && !recruitedIds.has(mirrorChampion.id)
+                                ? mirrorChampion : null;
+                            const frameChampion = mirrorChampion; // always render frame
                             const wallFace = renderType === 'Mirror'
                                 ? MIRROR_FACE_MAP.get(`${x},${y}`)
                                 : undefined;
@@ -337,6 +341,7 @@ export const DungeonScene = () => {
                                     type={renderType}
                                     position={[x * GRID_SIZE, 0, y * GRID_SIZE]}
                                     champion={champion}
+                                    frameChampion={frameChampion}
                                     wallFace={wallFace}
                                     doorOpen={doorOpen}
                                     doorOrientation={doorOrientation}

@@ -54,7 +54,7 @@ export function preloadAllSounds(): void {
 }
 
 // Per-sound cooldown: prevents the same sound from re-triggering within MIN_INTERVAL ms
-const MIN_INTERVAL = 120; // ms
+const MIN_INTERVAL = 250; // ms
 const lastPlayed: Record<string, number> = {};
 
 function play(name: string, volume = 0.65): void {

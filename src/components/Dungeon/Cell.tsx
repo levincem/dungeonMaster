@@ -138,28 +138,125 @@ const FACE_CONFIGS: Record<CardinalDir, FaceConfig> = {
     West:  { pos: [-FACE_OFFSET, 0, 0], rot: [0,  Math.PI / 2, 0] }, // player looks east (+X)
 };
 
+// Portrait + frame dimensions
+const PORTRAIT_W = GRID_SIZE  * 0.62;
+const PORTRAIT_H = WALL_HEIGHT * 0.62;
+const FRAME_W    = PORTRAIT_W + GRID_SIZE  * 0.10;
+const FRAME_H    = PORTRAIT_H + WALL_HEIGHT * 0.10;
+const FRAME_BORDER = GRID_SIZE * 0.05; // thickness of visible border
+
+function makeFrameTex(): THREE.CanvasTexture {
+    const S = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext('2d')!;
+
+    // Outer fill — dark stone backing
+    ctx.fillStyle = '#1a1510';
+    ctx.fillRect(0, 0, S, S);
+
+    const b = Math.round(S * (FRAME_BORDER / FRAME_W)); // border px
+
+    // Frame body — warm wood gradient
+    const grad = ctx.createLinearGradient(0, 0, S, S);
+    grad.addColorStop(0,   '#6b3c1a');
+    grad.addColorStop(0.3, '#8b4f22');
+    grad.addColorStop(0.6, '#7a4219');
+    grad.addColorStop(1,   '#5a3010');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, S, S);
+
+    // Inner cutout (transparent → canvas alpha)
+    ctx.clearRect(b, b, S - 2 * b, S - 2 * b);
+
+    // Highlight top/left edge
+    ctx.strokeStyle = 'rgba(220,160,80,0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(1, S - 1); ctx.lineTo(1, 1); ctx.lineTo(S - 1, 1); ctx.stroke();
+
+    // Shadow bottom/right edge
+    ctx.strokeStyle = 'rgba(0,0,0,0.70)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(1, S - 1); ctx.lineTo(S - 1, S - 1); ctx.lineTo(S - 1, 1); ctx.stroke();
+
+    // Inner bevel highlight
+    ctx.strokeStyle = 'rgba(180,110,50,0.40)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(b - 1, b - 1, S - 2 * (b - 1), S - 2 * (b - 1));
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+}
+
+const FRAME_TEX = makeFrameTex();
+
+/** Decorative frame always visible on mirror wall, regardless of champion state. */
+const PortraitFrame: React.FC<{ wallFace: CardinalDir }> = ({ wallFace }) => {
+    const { pos, rot } = FACE_CONFIGS[wallFace];
+    const zOff = 0.008; // tiny Z-offset in front of wall
+    const fwdVec: [number,number,number] = [
+        pos[0] !== 0 ? Math.sign(pos[0]) * zOff : 0,
+        0,
+        pos[2] !== 0 ? Math.sign(pos[2]) * zOff : 0,
+    ];
+    const framePos: [number,number,number] = [pos[0] + fwdVec[0], pos[1] + fwdVec[1], pos[2] + fwdVec[2]];
+    return (
+        <Plane args={[FRAME_W, FRAME_H]} position={framePos} rotation={rot}>
+            <meshBasicMaterial map={FRAME_TEX} transparent alphaTest={0.01} side={THREE.DoubleSide} />
+        </Plane>
+    );
+};
+
+/** Empty dark canvas inside the frame (shown when champion has been recruited). */
+const FrameEmpty: React.FC<{ wallFace: CardinalDir }> = ({ wallFace }) => {
+    const { pos, rot } = FACE_CONFIGS[wallFace];
+    const zOff = 0.004;
+    const fwdVec: [number,number,number] = [
+        pos[0] !== 0 ? Math.sign(pos[0]) * zOff : 0,
+        0,
+        pos[2] !== 0 ? Math.sign(pos[2]) * zOff : 0,
+    ];
+    const innerPos: [number,number,number] = [pos[0] + fwdVec[0], pos[1] + fwdVec[1], pos[2] + fwdVec[2]];
+    return (
+        <Plane args={[PORTRAIT_W, PORTRAIT_H]} position={innerPos} rotation={rot}>
+            <meshBasicMaterial color="#e8e4dc" side={THREE.DoubleSide} />
+        </Plane>
+    );
+};
+
 const MirrorPortrait: React.FC<{ champion: Champion; wallFace: CardinalDir }> = ({ champion, wallFace }) => {
     const tex = useTexture(champion.portrait);
     tex.colorSpace = THREE.SRGBColorSpace;
 
-    const PORTRAIT_W = GRID_SIZE * 0.72;
-    const PORTRAIT_H = WALL_HEIGHT * 0.72;
     const { pos, rot } = FACE_CONFIGS[wallFace];
+    const zOff = 0.004;
+    const fwdVec: [number,number,number] = [
+        pos[0] !== 0 ? Math.sign(pos[0]) * zOff : 0,
+        0,
+        pos[2] !== 0 ? Math.sign(pos[2]) * zOff : 0,
+    ];
+    const imgPos: [number,number,number] = [pos[0] + fwdVec[0], pos[1] + fwdVec[1], pos[2] + fwdVec[2]];
 
     return (
-        <Plane args={[PORTRAIT_W, PORTRAIT_H]} position={pos} rotation={rot}>
+        <Plane args={[PORTRAIT_W, PORTRAIT_H]} position={imgPos} rotation={rot}>
             <meshBasicMaterial map={tex} transparent alphaTest={0.05} side={THREE.DoubleSide} />
         </Plane>
     );
 };
 
 const ProceduralPortrait: React.FC<{ champion: Champion; wallFace: CardinalDir }> = ({ champion, wallFace }) => {
-    const PORTRAIT_W = GRID_SIZE * 0.72;
-    const PORTRAIT_H = WALL_HEIGHT * 0.72;
     const { pos, rot } = FACE_CONFIGS[wallFace];
+    const zOff = 0.004;
+    const fwdVec: [number,number,number] = [
+        pos[0] !== 0 ? Math.sign(pos[0]) * zOff : 0,
+        0,
+        pos[2] !== 0 ? Math.sign(pos[2]) * zOff : 0,
+    ];
+    const imgPos: [number,number,number] = [pos[0] + fwdVec[0], pos[1] + fwdVec[1], pos[2] + fwdVec[2]];
     const color = new THREE.Color(CLASS_COLORS[champion.class] ?? '#555');
     return (
-        <Plane args={[PORTRAIT_W, PORTRAIT_H]} position={pos} rotation={rot}>
+        <Plane args={[PORTRAIT_W, PORTRAIT_H]} position={imgPos} rotation={rot}>
             <meshBasicMaterial color={color} side={THREE.DoubleSide} />
         </Plane>
     );
@@ -324,7 +421,8 @@ const DoorMesh: React.FC<{
 interface CellProps {
     type: CellRenderType;
     position: [number, number, number];
-    champion?: Champion | null;
+    champion?: Champion | null;       // portrait to show (null = recruited, hide portrait)
+    frameChampion?: Champion | null;  // champion for frame (always shown when Mirror)
     wallFace?: CardinalDir;
     doorOpen?: boolean;
     doorOrientation?: string;
@@ -332,7 +430,7 @@ interface CellProps {
     onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }
 
-export const Cell: React.FC<CellProps> = ({ type, position, champion, wallFace, doorOpen, doorOrientation, doorHasButton, onClick }) => {
+export const Cell: React.FC<CellProps> = ({ type, position, champion, frameChampion, wallFace, doorOpen, doorOrientation, doorHasButton, onClick }) => {
     const textures = useTexture({
         wall:    '/textures/wall.png?v=2',
         floor:   '/textures/floor.png?v=2',
@@ -373,14 +471,20 @@ export const Cell: React.FC<CellProps> = ({ type, position, champion, wallFace, 
 
     // ── MIRROR ────────────────────────────────────────────────────────────────
     if (type === 'Mirror') {
+        const face = wallFace ?? 'South';
         return (
             <group position={position} onClick={onClick}>
                 {wallBlock}
-                {champion && wallFace ? (
-                    <Suspense fallback={<ProceduralPortrait champion={champion} wallFace={wallFace} />}>
-                        <MirrorPortrait champion={champion} wallFace={wallFace} />
+                {/* Frame always present */}
+                {frameChampion && <PortraitFrame wallFace={face} />}
+                {/* White backing always visible inside the frame */}
+                {frameChampion && <FrameEmpty wallFace={face} />}
+                {/* Portrait on top (only when champion not yet recruited) */}
+                {champion && wallFace && (
+                    <Suspense fallback={<ProceduralPortrait champion={champion} wallFace={face} />}>
+                        <MirrorPortrait champion={champion} wallFace={face} />
                     </Suspense>
-                ) : null}
+                )}
             </group>
         );
     }

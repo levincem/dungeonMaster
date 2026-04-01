@@ -242,7 +242,7 @@ const RuneBtn: React.FC<{
             }}
         >
             <img
-                src={`/runes/${runeId}_${selected ? 'on' : 'off'}.png`}
+                src={`/runes/${runeId}.png`}
                 alt={rune?.name}
                 style={{ width: '74%', height: '74%', objectFit: 'contain' }}
                 draggable={false}
@@ -487,7 +487,7 @@ export const HUD = () => {
                             >
                                 {runeId ? (
                                     <>
-                                        <img src={`/runes/${runeId}_on.png`} alt=""
+                                        <img src={`/runes/${runeId}.png`} alt=""
                                             style={{ width: '78%', height: '78%', objectFit: 'contain' }} />
                                         <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.75)', letterSpacing: 1, lineHeight: 1 }}>
                                             {rune?.name?.toUpperCase()}

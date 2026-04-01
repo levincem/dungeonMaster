@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 // ─── Asset manifest ───────────────────────────────────────────────────────────
 
 const RUNE_IDS = [
-    'bro','dain','des','ee','ein','ew','ful','gor',
+    'bro','dain','des','ee','ew','ful','gor',
     'ir','kath','ku','lo','mon','neta','oh','on',
     'pal','ra','ros','sar','um','ven','vi','ya','zo',
 ];
@@ -11,8 +11,8 @@ const RUNE_IDS = [
 const CREATURE_IDS = Array.from({ length: 27 }, (_, i) => i); // 0-26
 
 const ASSETS: string[] = [
-    // Runes (on + off states)
-    ...RUNE_IDS.flatMap(id => [`/runes/${id}_on.png`, `/runes/${id}_off.png`]),
+    // Runes
+    ...RUNE_IDS.map(id => `/runes/${id}.png`),
     // Creature sprites
     ...CREATURE_IDS.map(id => `/sprites/creatures/creature_${id}.png`),
     // Portrait sheets

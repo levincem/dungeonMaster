@@ -180,10 +180,6 @@ export interface CreatureInstance {
     y: number;
     currentHP: number;
     alive: boolean;
-    /** Seconds until next movement step */
-    moveTimer: number;
-    /** Seconds until next attack */
-    atkTimer: number;
     /** Sub-position within the tile — 'left' or 'right' (at most 2 per tile) */
     side: CreatureSide;
 }

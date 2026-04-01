@@ -140,6 +140,9 @@ function hasLineOfSight(map: GameMap, ax: number, ay: number, bx: number, by: nu
     return true;
 }
 
+// ─── Creature timers (mutable, kept outside Zustand to avoid per-frame re-renders) ──
+const creatureTimers = new Map<string, { mt: number; at: number }>();
+
 // ─── Creature initialisation ──────────────────────────────────────────────────
 
 function buildCreatureInstances(): CreatureInstance[] {
@@ -162,16 +165,19 @@ function buildCreatureInstances(): CreatureInstance[] {
                     const existing = tileSides.get(tileKey);
                     const side: CreatureSide = existing ? 'right' : 'left';
                     tileSides.set(tileKey, side);
+                    const id = `${map.index}_${tile.x}_${tile.y}_${co.index}`;
+                    creatureTimers.set(id, {
+                        mt: Math.random() * moveSec,
+                        at: Math.random() * atkSec,
+                    });
                     instances.push({
-                        id: `${map.index}_${tile.x}_${tile.y}_${co.index}`,
+                        id,
                         typeId: co.type,
                         mapIndex: map.index,
                         x: tile.x,
                         y: tile.y,
                         currentHP: co.hp > 0 ? co.hp : def.baseHP,
                         alive: true,
-                        moveTimer: Math.random() * moveSec,
-                        atkTimer:  Math.random() * atkSec,
                         side,
                     });
                 }
@@ -331,6 +337,33 @@ function computeSensorEffect(sensor: SensorObject, level: number, ss: SensorStat
     return { firedSensors: newFired };
 }
 
+/** Map movement direction → wall face toward the player (for wall-push sensors). */
+const PUSH_FACE: Record<string, string> = {
+    NORTH: 'South', SOUTH: 'North', EAST: 'West', WEST: 'East',
+};
+
+/** Trigger sensors on a wall tile when the player pushes against it. */
+function triggerWallPushSensors(level: number, wx: number, wy: number, dir: string, ss: SensorState): Partial<SensorState> {
+    const tile = getMap(level).tiles[wy]?.[wx];
+    if (!tile || tile.type !== 'Wall') return {};
+    const face = PUSH_FACE[dir];
+    let cur: SensorState = ss;
+    let changed = false;
+    for (const obj of tile.objects) {
+        if (obj.category !== 'Sensor') continue;
+        const sensor = obj as SensorObject;
+        if (sensor.tilePos !== face) continue;
+        // Skip wall-button-on-door (type 2) and lever (type 1) — levers are clicked
+        if (sensor.type === 1 || sensor.type === 2 || sensor.type === 127) continue;
+        const effect = computeSensorEffect(sensor, level, cur);
+        if (Object.keys(effect).length > 0) {
+            cur = { ...cur, ...effect } as SensorState;
+            changed = true;
+        }
+    }
+    return changed ? cur : {};
+}
+
 function triggerFloorSensors(level: number, x: number, y: number, ss: SensorState): Partial<SensorState> {
     const tile = getMap(level).tiles[y]?.[x];
     if (!tile) return {};
@@ -471,9 +504,13 @@ export const useStore = create<GameState>((set) => ({
         if (state.direction === 'EAST')  nx = x + 1;
         if (state.direction === 'WEST')  nx = x - 1;
         if (state.level === 0 && ny === 14 && nx === 1 && state.gateOpen) {
-            return { level: 1, position: [2, 2] as [number, number], direction: state.direction };
+            return { level: 1, position: [1, 3] as [number, number], direction: 'SOUTH' };
         }
-        if (!isWalkable(state.level, ny, nx, state.openDoors)) return state;
+        if (!isWalkable(state.level, ny, nx, state.openDoors)) {
+            const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
+            const pushChanges = triggerWallPushSensors(state.level, nx, ny, state.direction, ss);
+            return Object.keys(pushChanges).length > 0 ? pushChanges : state;
+        }
         const map = getMap(state.level);
         const tile = map.tiles[ny]?.[nx];
         if (!tile) return state;
@@ -1115,8 +1152,10 @@ export const useStore = create<GameState>((set) => ({
             const moveSec = def.moveSpd / 6;
             const atkSec  = def.atkSpd  / 6;
 
-            let moveTimer = Math.max(0, c.moveTimer - delta);
-            let atkTimer  = Math.max(0, c.atkTimer  - delta);
+            // Read timers from external mutable Map (avoids per-frame Zustand updates)
+            const timers = creatureTimers.get(c.id) ?? { mt: Math.random() * moveSec, at: Math.random() * atkSec };
+            let moveTimer = Math.max(0, timers.mt - delta);
+            let atkTimer  = Math.max(0, timers.at  - delta);
 
             const dx   = px - c.x;
             const dy   = py - c.y;
@@ -1195,9 +1234,13 @@ export const useStore = create<GameState>((set) => ({
                 newSide = destOther ? (destOther.side === 'left' ? 'right' : 'left') : 'left';
             }
 
-            if (nx !== c.x || ny !== c.y || newSide !== c.side || moveTimer !== c.moveTimer || atkTimer !== c.atkTimer) {
+            // Always persist updated timers to the external Map (no re-render cost)
+            creatureTimers.set(c.id, { mt: moveTimer, at: atkTimer });
+
+            // Only update Zustand state when something visible changes (position / side / alive)
+            if (nx !== c.x || ny !== c.y || newSide !== c.side) {
                 if (creatures === state.creatures) creatures = [...creatures];
-                creatures[i] = { ...c, x: nx, y: ny, side: newSide, moveTimer, atkTimer };
+                creatures[i] = { ...c, x: nx, y: ny, side: newSide };
                 anyChange = true;
             }
         }
