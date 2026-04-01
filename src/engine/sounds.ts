@@ -53,7 +53,14 @@ export function preloadAllSounds(): void {
     for (const name of Object.keys(FILES)) getOrCreate(name);
 }
 
+// Per-sound cooldown: prevents the same sound from re-triggering within MIN_INTERVAL ms
+const MIN_INTERVAL = 120; // ms
+const lastPlayed: Record<string, number> = {};
+
 function play(name: string, volume = 0.65): void {
+    const now = Date.now();
+    if (now - (lastPlayed[name] ?? 0) < MIN_INTERVAL) return;
+    lastPlayed[name] = now;
     const audios = getOrCreate(name);
     if (!audios.length) return;
     const audio = audios.find(a => a.paused || a.ended) ?? audios[0];

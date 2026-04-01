@@ -59,7 +59,7 @@ const PORTRAITS: Record<number, string> = {
      7: '/portraits/boris.png',
      8: '/portraits/mophus.png',
      9: '/portraits/leif.png',
-    10: '/portraits/wutse.png',
+    10: '/portraits/wuTse.png',
     11: '/portraits/alex.png',
     12: '/portraits/linflas.png',
     13: '/portraits/azizi.png',

@@ -26,6 +26,7 @@ dist-ssr
 # Raw source assets (large, kept locally)
 assets/
 creatures/
+import/
 
 # Claude local settings
 .claude/

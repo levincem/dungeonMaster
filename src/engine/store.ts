@@ -1149,7 +1149,7 @@ export const useStore = create<GameState>((set) => ({
                     );
                     if (valid.length > 0) {
                         [nx, ny] = valid[Math.floor(Math.random() * valid.length)];
-                        if (nx !== c.x || ny !== c.y) playCreatureMove(c.typeId);
+                        if ((nx !== c.x || ny !== c.y) && dist <= 6) playCreatureMove(c.typeId);
                     }
                 } else {
                     const dirs: [number, number][] = [[1,0],[-1,0],[0,1],[0,-1]];
@@ -1158,7 +1158,7 @@ export const useStore = create<GameState>((set) => ({
                         .filter(([cx, cy]) => monsterWalkable(cy, cx) && tileAvailable(cx, cy));
                     if (valid.length > 0) {
                         [nx, ny] = valid[Math.floor(Math.random() * valid.length)];
-                        if (nx !== c.x || ny !== c.y) playCreatureMove(c.typeId);
+                        if ((nx !== c.x || ny !== c.y) && dist <= 6) playCreatureMove(c.typeId);
                     } else {
                         moveTimer = moveSec * (1.0 + Math.random() * 0.5);
                     }
