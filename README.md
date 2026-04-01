@@ -1,3 +1,13 @@
+# Dungeon Master
+
+## Remerciements
+
+- À la communauté Dungeon Master
+- Au site [Dungeon Master Encyclopaedia](http://dmweb.free.fr/)
+- Au projet [ReDMCSB](https://github.com/gondur/ReDMCSB_Release2), par Christophe Fontanel
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
