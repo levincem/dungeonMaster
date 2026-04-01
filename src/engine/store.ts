@@ -13,7 +13,7 @@ import { CREATURE_TYPES } from '../data/creatures';
 import { findSpell, getSkillLevel } from '../data/runes';
 import type { CastSkill } from '../data/runes';
 import { WEAPON_TYPES } from '../data/items';
-import { playPartyAttack, playCreatureMove, playCreatureAttack } from './sounds';
+import { playPartyAttack, playCreatureMove, playCreatureAttack, playPlate } from './sounds';
 
 export type Direction = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
 export type GamePhase = 'exploration' | 'mirror_open';
@@ -138,6 +138,17 @@ function hasLineOfSight(map: GameMap, ax: number, ay: number, bx: number, by: nu
         if (!tile || tile.type === 'Wall' || tile.type === 'Door') return false;
     }
     return true;
+}
+
+// ─── Pressure plate activation pub/sub (no Zustand — only drives animation) ──
+type PlateListener = (level: number, x: number, y: number) => void;
+const plateListeners = new Set<PlateListener>();
+export function subscribePlateActivated(fn: PlateListener) {
+    plateListeners.add(fn);
+    return () => plateListeners.delete(fn);
+}
+function notifyPlateActivated(level: number, x: number, y: number) {
+    for (const fn of plateListeners) fn(level, x, y);
 }
 
 // ─── Creature timers (mutable, kept outside Zustand to avoid per-frame re-renders) ──
@@ -369,6 +380,7 @@ function triggerFloorSensors(level: number, x: number, y: number, ss: SensorStat
     if (!tile) return {};
     let cur: SensorState = ss;
     let changed = false;
+    let playedSound = false;
     for (const obj of tile.objects) {
         if (obj.category !== 'Sensor') continue;
         const sensor = obj as SensorObject;
@@ -377,8 +389,14 @@ function triggerFloorSensors(level: number, x: number, y: number, ss: SensorStat
         if (Object.keys(effect).length > 0) {
             cur = { ...cur, ...effect } as SensorState;
             changed = true;
+            if (sensor.sound && !playedSound) {
+                playPlate();
+                playedSound = true;
+            }
         }
     }
+    // Notify pressure-plate animation subscribers
+    if (changed) notifyPlateActivated(level, x, y);
     return changed ? cur : {};
 }
 

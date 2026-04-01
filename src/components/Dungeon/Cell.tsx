@@ -1,8 +1,9 @@
-import React, { useMemo, useRef, useEffect, Suspense } from 'react';
+import React, { useMemo, useRef, useEffect, useState, Suspense } from 'react';
 import { Box, Plane, useTexture } from '@react-three/drei';
 import { useLoader, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GRID_SIZE, WALL_HEIGHT } from '../../engine/constants';
+import { subscribePlateActivated } from '../../engine/store';
 import type { ThreeEvent } from '@react-three/fiber';
 import type { Champion } from '../../data/champions';
 import type { CardinalDir } from '../../types/game';
@@ -416,11 +417,113 @@ const DoorMesh: React.FC<{
     </Suspense>
 );
 
+// ─── Pressure plate ───────────────────────────────────────────────────────────
+
+const PLATE_W  = GRID_SIZE * 0.52;
+const PLATE_D  = GRID_SIZE * 0.52;
+const PLATE_H  = 0.045;           // raised height above floor
+const PLATE_SINK = 0.040;         // how far it sinks when pressed
+const PLATE_ANIM = 0.18;          // press-down duration in seconds
+const FLOOR_Y  = -GRID_SIZE / 2;  // world Y of floor surface
+
+function makePlateTex(): THREE.CanvasTexture {
+    const S = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext('2d')!;
+
+    // Base stone — slightly lighter than wall
+    ctx.fillStyle = '#4a4236';
+    ctx.fillRect(0, 0, S, S);
+
+    // Subtle stone grain
+    for (let i = 0; i < 18; i++) {
+        ctx.fillStyle = `rgba(${60 + Math.random()*20|0},${50+Math.random()*15|0},${40+Math.random()*10|0},0.5)`;
+        const rx = Math.random()*S, ry = Math.random()*S, rw = 6+Math.random()*20, rh = 2+Math.random()*6;
+        ctx.fillRect(rx, ry, rw, rh);
+    }
+
+    // Top-face bevel: light top-left, dark bottom-right
+    const bw = 7;
+    ctx.fillStyle = 'rgba(200,170,110,0.28)';
+    ctx.fillRect(0, 0, S, bw);       // top
+    ctx.fillRect(0, 0, bw, S);       // left
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, S-bw, S, bw);    // bottom
+    ctx.fillRect(S-bw, 0, bw, S);    // right
+
+    // Carved symbol — simple cross
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(S/2, S*0.28); ctx.lineTo(S/2, S*0.72);
+    ctx.moveTo(S*0.28, S/2); ctx.lineTo(S*0.72, S/2);
+    ctx.stroke();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+}
+
+const PLATE_TOP_TEX = makePlateTex();
+
+const PressurePlate: React.FC<{ tileX: number; tileY: number; level: number }> = ({ tileX, tileY, level }) => {
+    const pressRef = useRef(0);   // 0 = up, 1 = down, animating between
+    const groupRef = useRef<THREE.Group>(null);
+
+    useEffect(() => {
+        return subscribePlateActivated((lvl, x, y) => {
+            if (lvl === level && x === tileX && y === tileY) {
+                pressRef.current = 1;
+            }
+        });
+    }, [level, tileX, tileY]);
+
+    useFrame((_, delta) => {
+        if (!groupRef.current) return;
+        // Decay press value back to 0
+        if (pressRef.current > 0) {
+            pressRef.current = Math.max(0, pressRef.current - delta / PLATE_ANIM);
+        }
+        const sink = pressRef.current * PLATE_SINK;
+        groupRef.current.position.y = FLOOR_Y + PLATE_H - sink;
+    });
+
+    // Side faces to give volume (4 thin boxes around the plate edges)
+    const sideColor = '#2e2820';
+
+    return (
+        <group ref={groupRef} position={[0, FLOOR_Y + PLATE_H, 0]}>
+            {/* Top face */}
+            <Plane args={[PLATE_W, PLATE_D]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+                <meshBasicMaterial map={PLATE_TOP_TEX} />
+            </Plane>
+            {/* Side faces — N/S/E/W thin strips for depth illusion */}
+            <Plane args={[PLATE_W, PLATE_H * 2]} position={[0, -PLATE_H, -PLATE_D / 2]} rotation={[0, 0, 0]}>
+                <meshBasicMaterial color={sideColor} />
+            </Plane>
+            <Plane args={[PLATE_W, PLATE_H * 2]} position={[0, -PLATE_H,  PLATE_D / 2]} rotation={[0, Math.PI, 0]}>
+                <meshBasicMaterial color={sideColor} />
+            </Plane>
+            <Plane args={[PLATE_D, PLATE_H * 2]} position={[-PLATE_W / 2, -PLATE_H, 0]} rotation={[0,  Math.PI / 2, 0]}>
+                <meshBasicMaterial color={sideColor} />
+            </Plane>
+            <Plane args={[PLATE_D, PLATE_H * 2]} position={[ PLATE_W / 2, -PLATE_H, 0]} rotation={[0, -Math.PI / 2, 0]}>
+                <meshBasicMaterial color={sideColor} />
+            </Plane>
+        </group>
+    );
+};
+
 // ─── Cell component ───────────────────────────────────────────────────────────
 
 interface CellProps {
     type: CellRenderType;
     position: [number, number, number];
+    tileX?: number;
+    tileY?: number;
+    level?: number;
+    hasPressurePlate?: boolean;
     champion?: Champion | null;       // portrait to show (null = recruited, hide portrait)
     frameChampion?: Champion | null;  // champion for frame (always shown when Mirror)
     wallFace?: CardinalDir;
@@ -430,7 +533,7 @@ interface CellProps {
     onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }
 
-export const Cell: React.FC<CellProps> = ({ type, position, champion, frameChampion, wallFace, doorOpen, doorOrientation, doorHasButton, onClick }) => {
+export const Cell: React.FC<CellProps> = ({ type, position, tileX = 0, tileY = 0, level = 0, hasPressurePlate, champion, frameChampion, wallFace, doorOpen, doorOrientation, doorHasButton, onClick }) => {
     const textures = useTexture({
         wall:    '/textures/wall.png?v=2',
         floor:   '/textures/floor.png?v=2',
@@ -539,5 +642,10 @@ export const Cell: React.FC<CellProps> = ({ type, position, champion, frameChamp
     }
 
     // ── FLOOR (default for Floor, Teleporter, Water, Pit…) ───────────────────
-    return <group position={position}>{floorCeiling}</group>;
+    return (
+        <group position={position}>
+            {floorCeiling}
+            {hasPressurePlate && <PressurePlate tileX={tileX} tileY={tileY} level={level} />}
+        </group>
+    );
 };

@@ -8,6 +8,7 @@ const FILES: Record<string, string> = {
     // Player
     footstep:               'footstep.mp3',
     cry:                    'cry.mp3',
+    plate:                  'clic.wav',
     // Party attack
     attack_slash:           'attack_slash.mp3',
     // Creature attacks
@@ -72,8 +73,9 @@ function play(name: string, volume = 0.65): void {
 }
 
 // ─── Player ───────────────────────────────────────────────────────────────────
-export function playStep(): void { play('footstep', 0.60); }
-export function playCry():  void { play('cry',       0.55); }
+export function playStep():  void { play('footstep', 0.60); }
+export function playCry():   void { play('cry',       0.55); }
+export function playPlate(): void { play('plate',     0.80); }
 
 // ─── Party attack ─────────────────────────────────────────────────────────────
 export function playPartyAttack(): void { play('attack_slash', 0.70); }
