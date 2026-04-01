@@ -1,0 +1,205 @@
+// Rich tile and map types — derived from Old_data/dungeon.json structure
+
+import type { EquipSlotKey } from './items';
+
+export type CardinalDir = 'North' | 'East' | 'South' | 'West';
+
+export type TileType =
+    | 'Floor'
+    | 'Wall'
+    | 'Door'
+    | 'Teleporter'
+    | 'Pit'
+    | 'Water'
+    | 'StairsUp'
+    | 'StairsDown';
+
+// ─── Tile objects ──────────────────────────────────────────────────────────────
+
+export interface DoorObject {
+    category: 'Door';
+    index: number;
+    tilePos: CardinalDir;
+    destructChop: boolean;
+    destructFire: boolean;
+    hasButton: boolean;
+    openDirection: 'Horizontal' | 'Vertical';
+    ornate: number;
+    doorType: number;
+}
+
+export interface TeleporterObject {
+    category: 'Teleporter';
+    index: number;
+    tilePos: CardinalDir;
+    sound: boolean;
+    scope: string;
+    rotationType: number;
+    rotation: CardinalDir;
+    destX: number;
+    destY: number;
+    destMap: number;
+}
+
+export type SensorAction = 'Set' | 'Clear' | 'Toggle' | 'Hold';
+
+export interface SensorObject {
+    category: 'Sensor';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+    data: number;
+    graphic: number;
+    isLocal: boolean;
+    delay: number;
+    sound: boolean;
+    revert: boolean;
+    action: SensorAction;
+    onceOnly: boolean;
+    targetY: number;
+    targetX: number;
+    targetDir: CardinalDir;
+}
+
+export interface WallTextObject {
+    category: 'Text';
+    index: number;
+    tilePos: CardinalDir;
+    visible: boolean;
+    text?: string;
+}
+
+export interface CreatureObject {
+    category: 'Creature';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;   // references creatureTypes in game_db.json
+    hp: number;
+}
+
+export interface WeaponObject {
+    category: 'Weapon';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+}
+
+export interface ArmorObject {
+    category: 'Armor';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+}
+
+export interface PotionObject {
+    category: 'Potion';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+}
+
+export interface ScrollObject {
+    category: 'Scroll';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+}
+
+export interface MiscObject {
+    category: 'Misc';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+    name: string;
+    important?: boolean;
+}
+
+export interface ContainerObject {
+    category: 'Container';
+    index: number;
+    tilePos: CardinalDir;
+    type: number;
+}
+
+export type TileObject =
+    | DoorObject
+    | TeleporterObject
+    | SensorObject
+    | WallTextObject
+    | CreatureObject
+    | WeaponObject
+    | ArmorObject
+    | PotionObject
+    | ScrollObject
+    | MiscObject
+    | ContainerObject;
+
+// ─── Tile & Map ────────────────────────────────────────────────────────────────
+
+export interface GameTile {
+    x: number;
+    y: number;
+    type: TileType;
+    // Which wall faces allow decorations
+    allowDecoN?: boolean;
+    allowDecoE?: boolean;
+    allowDecoS?: boolean;
+    allowDecoW?: boolean;
+    // Door-specific
+    orientation?: 'NorthSouth' | 'EastWest' | 'WestEast';
+    state?: 'Open' | 'Closed';
+    // Teleporter-specific
+    open?: boolean;
+    visible?: boolean;
+    // All objects placed on this tile
+    objects: TileObject[];
+}
+
+export interface GameMap {
+    index: number;
+    name: string;
+    level: number;
+    width: number;
+    height: number;
+    difficulty: number;
+    // 2D grid indexed as tiles[y][x]
+    tiles: GameTile[][];
+}
+
+// ─── Runtime instances ─────────────────────────────────────────────────────────
+
+/** Left/right sub-position within a tile (up to 2 creatures per tile) */
+export type CreatureSide = 'left' | 'right';
+
+/** A creature alive in the dungeon */
+export interface CreatureInstance {
+    id: string;          // unique per-spawn id
+    typeId: number;      // references CREATURE_TYPES
+    mapIndex: number;
+    x: number;
+    y: number;
+    currentHP: number;
+    alive: boolean;
+    /** Seconds until next movement step */
+    moveTimer: number;
+    /** Seconds until next attack */
+    atkTimer: number;
+    /** Sub-position within the tile — 'left' or 'right' (at most 2 per tile) */
+    side: CreatureSide;
+}
+
+/** An item lying on the dungeon floor */
+export interface FloorItem {
+    id: string;
+    category: 'Weapon' | 'Armor' | 'Potion' | 'Scroll' | 'Misc' | 'Container';
+    typeId: number;
+    /** Raw name from dungeon.json — may be a placeholder like "Misc_29" */
+    rawName?: string;
+    mapIndex: number;
+    x: number;
+    y: number;
+    tilePos: CardinalDir;
+}
+
+/** Per-champion equipped items, keyed by slot. */
+export type ChampionEquipment = Partial<Record<EquipSlotKey, FloorItem>>;
