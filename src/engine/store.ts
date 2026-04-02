@@ -151,6 +151,17 @@ function notifyPlateActivated(level: number, x: number, y: number) {
     for (const fn of plateListeners) fn(level, x, y);
 }
 
+// ─── Creature action pub/sub (drives sprite frame changes) ───────────────────
+type CreatureActionListener = (id: string, action: 'move' | 'attack') => void;
+const creatureActionListeners = new Set<CreatureActionListener>();
+export function onCreatureAction(fn: CreatureActionListener): () => void {
+    creatureActionListeners.add(fn);
+    return () => { creatureActionListeners.delete(fn); };
+}
+function notifyCreatureAction(id: string, action: 'move' | 'attack'): void {
+    for (const fn of creatureActionListeners) fn(id, action);
+}
+
 // ─── Creature timers (mutable, kept outside Zustand to avoid per-frame re-renders) ──
 const creatureTimers = new Map<string, { mt: number; at: number }>();
 
@@ -400,6 +411,74 @@ function triggerFloorSensors(level: number, x: number, y: number, ss: SensorStat
     return changed ? cur : {};
 }
 
+// ─── Staircase connections (auto-generated from dungeon.json destMap/destX/destY) ─
+// requireGate: true = only passable once the party is assembled (Hall of Champions gate).
+
+export const STAIR_CONNECTIONS: Array<{
+    fromLevel: number; fromY: number; fromX: number;
+    toLevel: number; toY: number; toX: number; dir: Direction;
+    requireGate: boolean;
+}> = [
+    { fromLevel: 0,  fromY: 15, fromX: 3,  toLevel: 1,  toY: 1,  toX: 3,  dir: 'NORTH', requireGate: true  },
+    { fromLevel: 1,  fromY: 1,  fromX: 3,  toLevel: 0,  toY: 15, toX: 3,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 1,  fromY: 26, fromX: 6,  toLevel: 2,  toY: 30, toX: 1,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 2,  fromY: 30, fromX: 1,  toLevel: 1,  toY: 26, toX: 6,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 2,  fromY: 21, fromX: 25, toLevel: 3,  toY: 31, toX: 30, dir: 'NORTH', requireGate: false },
+    { fromLevel: 3,  fromY: 8,  fromX: 6,  toLevel: 4,  toY: 8,  toX: 1,  dir: 'WEST',  requireGate: false },
+    { fromLevel: 3,  fromY: 12, fromX: 7,  toLevel: 4,  toY: 12, toX: 2,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 3,  fromY: 31, fromX: 30, toLevel: 2,  toY: 21, toX: 25, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 4,  fromY: 8,  fromX: 1,  toLevel: 3,  toY: 8,  toX: 6,  dir: 'NORTH', requireGate: false },
+    { fromLevel: 4,  fromY: 12, fromX: 2,  toLevel: 3,  toY: 12, toX: 7,  dir: 'WEST',  requireGate: false },
+    { fromLevel: 4,  fromY: 25, fromX: 6,  toLevel: 5,  toY: 20, toX: 6,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 4,  fromY: 6,  fromX: 8,  toLevel: 5,  toY: 1,  toX: 8,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 5,  fromY: 20, fromX: 6,  toLevel: 4,  toY: 25, toX: 6,  dir: 'WEST',  requireGate: false },
+    { fromLevel: 5,  fromY: 1,  fromX: 8,  toLevel: 4,  toY: 6,  toX: 8,  dir: 'NORTH', requireGate: false },
+    { fromLevel: 5,  fromY: 25, fromX: 25, toLevel: 6,  toY: 25, toX: 25, dir: 'NORTH', requireGate: false },
+    { fromLevel: 6,  fromY: 29, fromX: 22, toLevel: 7,  toY: 23, toX: 7,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 6,  fromY: 25, fromX: 25, toLevel: 5,  toY: 25, toX: 25, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 6,  fromY: 26, fromX: 27, toLevel: 7,  toY: 20, toX: 12, dir: 'EAST',  requireGate: false },
+    { fromLevel: 7,  fromY: 5,  fromX: 3,  toLevel: 8,  toY: 11, toX: 11, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 7,  fromY: 20, fromX: 4,  toLevel: 8,  toY: 26, toX: 12, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 7,  fromY: 23, fromX: 7,  toLevel: 6,  toY: 29, toX: 22, dir: 'WEST',  requireGate: false },
+    { fromLevel: 7,  fromY: 19, fromX: 8,  toLevel: 8,  toY: 25, toX: 16, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 7,  fromY: 23, fromX: 9,  toLevel: 8,  toY: 29, toX: 17, dir: 'EAST',  requireGate: false },
+    { fromLevel: 7,  fromY: 20, fromX: 12, toLevel: 6,  toY: 26, toX: 27, dir: 'EAST',  requireGate: false },
+    { fromLevel: 8,  fromY: 5,  fromX: 10, toLevel: 9,  toY: 0,  toX: 12, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 8,  fromY: 11, fromX: 11, toLevel: 7,  toY: 5,  toX: 3,  dir: 'NORTH', requireGate: false },
+    { fromLevel: 8,  fromY: 26, fromX: 12, toLevel: 7,  toY: 20, toX: 4,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 8,  fromY: 17, fromX: 14, toLevel: 9,  toY: 12, toX: 16, dir: 'WEST',  requireGate: false },
+    { fromLevel: 8,  fromY: 25, fromX: 16, toLevel: 7,  toY: 19, toX: 8,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 8,  fromY: 27, fromX: 16, toLevel: 9,  toY: 22, toX: 18, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 8,  fromY: 29, fromX: 17, toLevel: 7,  toY: 23, toX: 9,  dir: 'WEST',  requireGate: false },
+    { fromLevel: 8,  fromY: 29, fromX: 19, toLevel: 9,  toY: 24, toX: 21, dir: 'EAST',  requireGate: false },
+    { fromLevel: 9,  fromY: 0,  fromX: 4,  toLevel: 10, toY: 0,  toX: 4,  dir: 'WEST',  requireGate: false },
+    { fromLevel: 9,  fromY: 0,  fromX: 12, toLevel: 8,  toY: 5,  toX: 10, dir: 'NORTH', requireGate: false },
+    { fromLevel: 9,  fromY: 12, fromX: 16, toLevel: 8,  toY: 17, toX: 14, dir: 'EAST',  requireGate: false },
+    { fromLevel: 9,  fromY: 22, fromX: 18, toLevel: 8,  toY: 27, toX: 16, dir: 'NORTH', requireGate: false },
+    { fromLevel: 9,  fromY: 24, fromX: 18, toLevel: 10, toY: 24, toX: 18, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 9,  fromY: 24, fromX: 21, toLevel: 8,  toY: 29, toX: 19, dir: 'WEST',  requireGate: false },
+    { fromLevel: 9,  fromY: 24, fromX: 23, toLevel: 10, toY: 24, toX: 23, dir: 'EAST',  requireGate: false },
+    { fromLevel: 10, fromY: 0,  fromX: 4,  toLevel: 9,  toY: 0,  toX: 4,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 10, fromY: 24, fromX: 18, toLevel: 9,  toY: 24, toX: 18, dir: 'NORTH', requireGate: false },
+    { fromLevel: 10, fromY: 26, fromX: 18, toLevel: 11, toY: 16, toX: 8,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 10, fromY: 24, fromX: 23, toLevel: 9,  toY: 24, toX: 23, dir: 'WEST',  requireGate: false },
+    { fromLevel: 10, fromY: 28, fromX: 24, toLevel: 11, toY: 18, toX: 14, dir: 'NORTH', requireGate: false },
+    { fromLevel: 10, fromY: 24, fromX: 25, toLevel: 11, toY: 14, toX: 15, dir: 'EAST',  requireGate: false },
+    { fromLevel: 11, fromY: 16, fromX: 8,  toLevel: 10, toY: 26, toX: 18, dir: 'NORTH', requireGate: false },
+    { fromLevel: 11, fromY: 18, fromX: 8,  toLevel: 12, toY: 8,  toX: 3,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 11, fromY: 12, fromX: 10, toLevel: 12, toY: 2,  toX: 5,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 11, fromY: 18, fromX: 14, toLevel: 10, toY: 28, toX: 24, dir: 'SOUTH', requireGate: false },
+    { fromLevel: 11, fromY: 14, fromX: 15, toLevel: 10, toY: 24, toX: 25, dir: 'WEST',  requireGate: false },
+    { fromLevel: 11, fromY: 16, fromX: 15, toLevel: 12, toY: 6,  toX: 10, dir: 'WEST',  requireGate: false },
+    { fromLevel: 12, fromY: 8,  fromX: 3,  toLevel: 11, toY: 18, toX: 8,  dir: 'NORTH', requireGate: false },
+    { fromLevel: 12, fromY: 10, fromX: 3,  toLevel: 13, toY: 8,  toX: 3,  dir: 'SOUTH', requireGate: false },
+    { fromLevel: 12, fromY: 2,  fromX: 5,  toLevel: 11, toY: 12, toX: 10, dir: 'NORTH', requireGate: false },
+    { fromLevel: 12, fromY: 11, fromX: 6,  toLevel: 13, toY: 9,  toX: 6,  dir: 'EAST',  requireGate: false },
+    { fromLevel: 12, fromY: 6,  fromX: 10, toLevel: 11, toY: 16, toX: 15, dir: 'EAST',  requireGate: false },
+    { fromLevel: 13, fromY: 8,  fromX: 3,  toLevel: 12, toY: 10, toX: 3,  dir: 'NORTH', requireGate: false },
+    { fromLevel: 13, fromY: 9,  fromX: 6,  toLevel: 12, toY: 11, toX: 6,  dir: 'WEST',  requireGate: false },
+];
+
 // ─── Start position ───────────────────────────────────────────────────────────
 
 const HALL_START: [number, number] = [3, 1];
@@ -521,9 +600,6 @@ export const useStore = create<GameState>((set) => ({
         if (state.direction === 'SOUTH') ny = y + 1;
         if (state.direction === 'EAST')  nx = x + 1;
         if (state.direction === 'WEST')  nx = x - 1;
-        if (state.level === 0 && ny === 14 && nx === 1 && state.gateOpen) {
-            return { level: 1, position: [1, 3] as [number, number], direction: 'SOUTH' };
-        }
         if (!isWalkable(state.level, ny, nx, state.openDoors)) {
             const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
             const pushChanges = triggerWallPushSensors(state.level, nx, ny, state.direction, ss);
@@ -532,6 +608,15 @@ export const useStore = create<GameState>((set) => ({
         const map = getMap(state.level);
         const tile = map.tiles[ny]?.[nx];
         if (!tile) return state;
+        if (tile.type === 'Stairs') {
+            const link = STAIR_CONNECTIONS.find(
+                s => s.fromLevel === state.level && s.fromY === ny && s.fromX === nx
+            );
+            if (link) {
+                if (link.requireGate && !state.gateOpen) return state;
+                return { level: link.toLevel, position: [link.toY, link.toX] as [number, number], direction: link.dir };
+            }
+        }
         if (tile.type === 'Teleporter') {
             const tp = getTeleporter(tile);
             if (tp && tp.destMap !== state.level) {
@@ -1206,7 +1291,10 @@ export const useStore = create<GameState>((set) => ({
                     );
                     if (valid.length > 0) {
                         [nx, ny] = valid[Math.floor(Math.random() * valid.length)];
-                        if ((nx !== c.x || ny !== c.y) && dist <= 6) playCreatureMove(c.typeId);
+                        if (nx !== c.x || ny !== c.y) {
+                            if (canSee) playCreatureMove(c.typeId);
+                            notifyCreatureAction(c.id, 'move');
+                        }
                     }
                 } else {
                     const dirs: [number, number][] = [[1,0],[-1,0],[0,1],[0,-1]];
@@ -1215,7 +1303,10 @@ export const useStore = create<GameState>((set) => ({
                         .filter(([cx, cy]) => monsterWalkable(cy, cx) && tileAvailable(cx, cy));
                     if (valid.length > 0) {
                         [nx, ny] = valid[Math.floor(Math.random() * valid.length)];
-                        if ((nx !== c.x || ny !== c.y) && dist <= 6) playCreatureMove(c.typeId);
+                        if (nx !== c.x || ny !== c.y) {
+                            if (canSee) playCreatureMove(c.typeId);
+                            notifyCreatureAction(c.id, 'move');
+                        }
                     } else {
                         moveTimer = moveSec * (1.0 + Math.random() * 0.5);
                     }
@@ -1226,6 +1317,7 @@ export const useStore = create<GameState>((set) => ({
             if (atkTimer === 0 && adjacent) {
                 atkTimer = atkSec * (0.9 + Math.random() * 0.2);
                 playCreatureAttack(c.typeId);
+                notifyCreatureAction(c.id, 'attack');
 
                 const target = getTarget(c.side);
                 if (target) {

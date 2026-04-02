@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useEffect, useState, Suspense } from 'react';
+import React, { useMemo, useRef, useEffect, Suspense } from 'react';
 import { Box, Plane, useTexture } from '@react-three/drei';
-import { useLoader, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GRID_SIZE, WALL_HEIGHT } from '../../engine/constants';
 import { subscribePlateActivated } from '../../engine/store';
@@ -27,104 +27,6 @@ const CLASS_COLORS: Record<string, string> = {
     Priest:  '#2980b9',
 };
 
-// ─── Staircase texture helpers ────────────────────────────────────────────────
-
-function drawStairSteps(
-    ctx: CanvasRenderingContext2D,
-    w: number, h: number,
-    steps: number,
-    topFirst: boolean,
-) {
-    for (let i = 0; i < steps; i++) {
-        const progress = i / (steps - 1);
-        const indent = progress * w * 0.28;
-        const brightness = Math.round(65 - progress * 35);
-        const stepH = h / steps;
-        const y = topFirst ? i * stepH : (steps - 1 - i) * stepH;
-
-        const treadH = stepH * 0.45;
-        ctx.fillStyle = `rgb(${brightness + 10},${brightness + 6},${brightness})`;
-        ctx.fillRect(indent, y, w - 2 * indent, treadH);
-
-        ctx.fillStyle = `rgb(${brightness - 8},${brightness - 10},${brightness - 14})`;
-        ctx.fillRect(indent, y + treadH, w - 2 * indent, stepH - treadH);
-
-        const edgeAlpha = topFirst ? 0.55 - progress * 0.45 : 0.15 + (1 - progress) * 0.45;
-        ctx.fillStyle = `rgba(190,148,55,${edgeAlpha})`;
-        ctx.fillRect(indent, y, w - 2 * indent, 2);
-
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(0, y, indent, stepH);
-        ctx.fillRect(w - indent, y, indent, stepH);
-    }
-}
-
-function makeDownStairsTexture(): THREE.CanvasTexture {
-    const w = 512, h = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.fillStyle = '#0b0905';
-    ctx.fillRect(0, 0, w, h);
-
-    const archH = Math.round(h * 0.14);
-    const archGrad = ctx.createLinearGradient(0, 0, 0, archH);
-    archGrad.addColorStop(0, '#1e1b14');
-    archGrad.addColorStop(1, '#111009');
-    ctx.fillStyle = archGrad;
-    ctx.fillRect(0, 0, w, archH);
-    ctx.fillStyle = 'rgba(160,120,40,0.35)';
-    ctx.fillRect(0, archH - 2, w, 3);
-
-    ctx.save();
-    ctx.rect(0, archH, w, h - archH);
-    ctx.clip();
-    drawStairSteps(ctx, w, h - archH, 7, true);
-    ctx.restore();
-
-    const fog = ctx.createLinearGradient(0, h * 0.45, 0, h);
-    fog.addColorStop(0, 'rgba(0,0,0,0)');
-    fog.addColorStop(1, 'rgba(0,0,0,0.88)');
-    ctx.fillStyle = fog;
-    ctx.fillRect(0, 0, w, h);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.needsUpdate = true;
-    return tex;
-}
-
-function makeUpStairsTexture(): THREE.CanvasTexture {
-    const w = 512, h = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.fillStyle = '#0b0905';
-    ctx.fillRect(0, 0, w, h);
-
-    drawStairSteps(ctx, w, Math.round(h * 0.86), 7, false);
-
-    const archH = Math.round(h * 0.14);
-    const archGrad = ctx.createLinearGradient(0, 0, 0, archH);
-    archGrad.addColorStop(0, '#2a2318');
-    archGrad.addColorStop(1, '#16130e');
-    ctx.fillStyle = archGrad;
-    ctx.fillRect(0, 0, w, archH);
-
-    const glow = ctx.createLinearGradient(0, 0, 0, h * 0.5);
-    glow.addColorStop(0, 'rgba(210,160,70,0.12)');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, w, h);
-
-    ctx.fillStyle = 'rgba(160,120,40,0.45)';
-    ctx.fillRect(0, archH - 2, w, 3);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.needsUpdate = true;
-    return tex;
-}
 
 // ─── Portrait components ──────────────────────────────────────────────────────
 
@@ -467,16 +369,17 @@ function makePlateTex(): THREE.CanvasTexture {
 
 const PLATE_TOP_TEX = makePlateTex();
 
-const PressurePlate: React.FC<{ tileX: number; tileY: number; level: number }> = ({ tileX, tileY, level }) => {
+export const PressurePlate: React.FC<{ tileX: number; tileY: number; level: number }> = ({ tileX, tileY, level }) => {
     const pressRef = useRef(0);   // 0 = up, 1 = down, animating between
     const groupRef = useRef<THREE.Group>(null);
 
     useEffect(() => {
-        return subscribePlateActivated((lvl, x, y) => {
+        const unsub = subscribePlateActivated((lvl, x, y) => {
             if (lvl === level && x === tileX && y === tileY) {
                 pressRef.current = 1;
             }
         });
+        return () => { unsub(); };
     }, [level, tileX, tileY]);
 
     useFrame((_, delta) => {
@@ -520,12 +423,8 @@ const PressurePlate: React.FC<{ tileX: number; tileY: number; level: number }> =
 interface CellProps {
     type: CellRenderType;
     position: [number, number, number];
-    tileX?: number;
-    tileY?: number;
-    level?: number;
-    hasPressurePlate?: boolean;
-    champion?: Champion | null;       // portrait to show (null = recruited, hide portrait)
-    frameChampion?: Champion | null;  // champion for frame (always shown when Mirror)
+    champion?: Champion | null;
+    frameChampion?: Champion | null;
     wallFace?: CardinalDir;
     doorOpen?: boolean;
     doorOrientation?: string;
@@ -533,56 +432,20 @@ interface CellProps {
     onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }
 
-export const Cell: React.FC<CellProps> = ({ type, position, tileX = 0, tileY = 0, level = 0, hasPressurePlate, champion, frameChampion, wallFace, doorOpen, doorOrientation, doorHasButton, onClick }) => {
-    const textures = useTexture({
-        wall:    '/textures/wall.png?v=2',
-        floor:   '/textures/floor.png?v=2',
-        ceiling: '/textures/ceiling.png?v=2',
-    });
-    Object.values(textures).forEach(t => {
-        t.wrapS = t.wrapT = THREE.RepeatWrapping;
-        t.repeat.set(1, 1);
-    });
-
-    const downStairsTex = useMemo(() => type === 'StairsDown' ? makeDownStairsTexture() : null, [type]);
-    const upStairsTex   = useMemo(() => type === 'StairsUp'   ? makeUpStairsTexture()   : null, [type]);
-
-    const wallBlock = (
-        <>
-            <Box args={[GRID_SIZE, WALL_HEIGHT, GRID_SIZE]}><meshBasicMaterial map={textures.wall} /></Box>
-            <Plane rotation={[Math.PI / 2, 0, 0]} position={[0, HALF, 0]} args={[GRID_SIZE, GRID_SIZE]}>
-                <meshBasicMaterial map={textures.ceiling} />
-            </Plane>
-        </>
-    );
-
-    const floorCeiling = (
-        <>
-            <Plane rotation={[-Math.PI / 2, 0, 0]} position={[0, -HALF, 0]} args={[GRID_SIZE, GRID_SIZE]}>
-                <meshBasicMaterial map={textures.floor} />
-            </Plane>
-            <Plane rotation={[Math.PI / 2, 0, 0]} position={[0, HALF, 0]} args={[GRID_SIZE, GRID_SIZE]}>
-                <meshBasicMaterial map={textures.ceiling} />
-            </Plane>
-        </>
-    );
-
-    // ── WALL ──────────────────────────────────────────────────────────────────
-    if (type === 'Wall') {
-        return <group position={position}>{wallBlock}</group>;
-    }
+export const Cell: React.FC<CellProps> = ({ type, position, wallFace, champion, frameChampion, doorOpen, doorOrientation, doorHasButton, onClick }) => {
+    const wallTex = useTexture('/textures/wall.png?v=2');
+    wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
+    wallTex.repeat.set(1, 1);
 
     // ── MIRROR ────────────────────────────────────────────────────────────────
+    // InstancedTiles renders ceiling for all tiles; Mirror needs its own wall Box.
     if (type === 'Mirror') {
         const face = wallFace ?? 'South';
         return (
             <group position={position} onClick={onClick}>
-                {wallBlock}
-                {/* Frame always present */}
+                <Box args={[GRID_SIZE, WALL_HEIGHT, GRID_SIZE]}><meshBasicMaterial map={wallTex} /></Box>
                 {frameChampion && <PortraitFrame wallFace={face} />}
-                {/* White backing always visible inside the frame */}
                 {frameChampion && <FrameEmpty wallFace={face} />}
-                {/* Portrait on top (only when champion not yet recruited) */}
                 {champion && wallFace && (
                     <Suspense fallback={<ProceduralPortrait champion={champion} wallFace={face} />}>
                         <MirrorPortrait champion={champion} wallFace={face} />
@@ -593,15 +456,12 @@ export const Cell: React.FC<CellProps> = ({ type, position, tileX = 0, tileY = 0
     }
 
     // ── DOOR ──────────────────────────────────────────────────────────────────
+    // InstancedTiles renders floor + ceiling for Door tiles.
     if (type === 'Door') {
-        // WestEast doors align N-S → rotate 90° around Y
         const doorRotY = doorOrientation === 'WestEast' ? Math.PI / 2 : 0;
         const hasBtn   = doorHasButton ?? false;
         return (
-            // Doors without button: the whole group is clickable (push the door)
-            // Doors with button: group has no onClick — only the button mesh fires
             <group position={position} onClick={hasBtn ? undefined : onClick}>
-                {floorCeiling}
                 <group rotation={[0, doorRotY, 0]}>
                     <DoorMesh
                         open={doorOpen ?? false}
@@ -613,39 +473,6 @@ export const Cell: React.FC<CellProps> = ({ type, position, tileX = 0, tileY = 0
         );
     }
 
-    // ── DOWN STAIRS ───────────────────────────────────────────────────────────
-    if (type === 'StairsDown') {
-        return (
-            <group position={position}>
-                {floorCeiling}
-                {downStairsTex && (
-                    <Plane args={[GRID_SIZE, WALL_HEIGHT]} position={[0, 0, -HALF]} rotation={[0, Math.PI, 0]}>
-                        <meshBasicMaterial map={downStairsTex} side={THREE.DoubleSide} />
-                    </Plane>
-                )}
-            </group>
-        );
-    }
-
-    // ── UP STAIRS ─────────────────────────────────────────────────────────────
-    if (type === 'StairsUp') {
-        return (
-            <group position={position}>
-                {floorCeiling}
-                {upStairsTex && (
-                    <Plane args={[GRID_SIZE, WALL_HEIGHT]} position={[0, 0, HALF]}>
-                        <meshBasicMaterial map={upStairsTex} side={THREE.DoubleSide} />
-                    </Plane>
-                )}
-            </group>
-        );
-    }
-
-    // ── FLOOR (default for Floor, Teleporter, Water, Pit…) ───────────────────
-    return (
-        <group position={position}>
-            {floorCeiling}
-            {hasPressurePlate && <PressurePlate tileX={tileX} tileY={tileY} level={level} />}
-        </group>
-    );
+    // Wall, Floor, Stairs — all handled by InstancedTiles; nothing to render here.
+    return null;
 };

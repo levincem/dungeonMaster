@@ -11,6 +11,7 @@ export type TileType =
     | 'Teleporter'
     | 'Pit'
     | 'Water'
+    | 'Stairs'
     | 'StairsUp'
     | 'StairsDown';
 

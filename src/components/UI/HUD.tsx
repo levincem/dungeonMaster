@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useStore, xpToLevel } from '../../engine/store';
-import { playStep, playCry } from '../../engine/sounds';
+import { playStep, playCry, onSoundPlayed } from '../../engine/sounds';
 import type { ChampionCombat, ChampionXP } from '../../engine/store';
 import { WEAPON_TYPES } from '../../data/items';
 import type { Champion } from '../../data/champions';
@@ -292,6 +292,12 @@ export const HUD = () => {
         championXP, championCombat, attackFront, championEquipment,
     } = useStore();
 
+    // ── Sound debug ─────────────────────────────────────────────────────────
+    const [lastSound, setLastSound] = useState<string>('');
+    useEffect(() => {
+        return onSoundPlayed((name, file) => setLastSound(`${name} (${file})`));
+    }, []);
+
     // ── Flash ───────────────────────────────────────────────────────────────
     const [flashKey, setFlashKey] = useState<string | null>(null);
     const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -366,8 +372,8 @@ export const HUD = () => {
 
     // ── Panel wrapper (subtle border/bg, no title) ──────────────────────────
     const panel: React.CSSProperties = {
-        background: 'rgba(6,4,16,0.78)',
-        border: '1px solid rgba(255,255,255,0.10)',
+        background: 'rgba(20,14,6,0.82)',
+        border: '1px solid rgba(200,170,110,0.14)',
         borderRadius: 6, padding: '8px 10px', marginBottom: 6,
     };
 
@@ -375,8 +381,8 @@ export const HUD = () => {
         <div style={{
             position: 'fixed', right: 0, top: 0,
             width: '33vw', height: '100vh',
-            background: 'rgba(0,0,0,0.50)',
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(38, 28, 12, 0.92)',
+            borderLeft: '1px solid rgba(200,170,110,0.18)',
             display: 'flex', flexDirection: 'column',
             padding: '10px', boxSizing: 'border-box',
             fontFamily: '"Courier New", Courier, monospace',
@@ -587,6 +593,11 @@ export const HUD = () => {
             <div style={{ fontSize: 10, color: '#993322', fontFamily: 'monospace', textAlign: 'center', opacity: 0.6 }}>
                 [{position[0]},{position[1]}] {direction} · LVL {level}
             </div>
+            {lastSound && (
+                <div style={{ fontSize: 9, color: '#cc8833', fontFamily: 'monospace', textAlign: 'center', opacity: 0.7, marginTop: 2 }}>
+                    ♪ {lastSound}
+                </div>
+            )}
         </div>
     );
 };

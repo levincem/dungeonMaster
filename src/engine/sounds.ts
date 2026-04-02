@@ -58,6 +58,14 @@ export function preloadAllSounds(): void {
 const MIN_INTERVAL = 250; // ms
 const lastPlayed: Record<string, number> = {};
 
+// ─── Debug overlay pub/sub ────────────────────────────────────────────────────
+type SoundListener = (name: string, file: string) => void;
+const soundListeners = new Set<SoundListener>();
+export function onSoundPlayed(fn: SoundListener): () => void {
+    soundListeners.add(fn);
+    return () => soundListeners.delete(fn);
+}
+
 function play(name: string, volume = 0.65): void {
     const now = Date.now();
     if (now - (lastPlayed[name] ?? 0) < MIN_INTERVAL) return;
@@ -69,6 +77,7 @@ function play(name: string, volume = 0.65): void {
         audio.volume = volume;
         audio.currentTime = 0;
         audio.play().catch(() => { /* autoplay policy */ });
+        for (const fn of soundListeners) fn(name, FILES[name] ?? name);
     } catch { /* ignore */ }
 }
 

@@ -62,6 +62,7 @@ function normaliseTileType(raw: string): TileType {
         case 'Teleporter':  return 'Teleporter';
         case 'Pit':         return 'Pit';
         case 'Water':       return 'Water';
+        case 'Stairs':      return 'Stairs';
         case 'StairsUp':    return 'StairsUp';
         case 'StairsDown':  return 'StairsDown';
         default:            return 'Floor'; // safe fallback

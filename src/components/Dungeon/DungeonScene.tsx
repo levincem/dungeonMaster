@@ -3,16 +3,18 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { PerspectiveCamera, Plane, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { useStore, MIRROR_WALL_MAP, MIRROR_FACE_MAP } from '../../engine/store';
+import { useStore, MIRROR_WALL_MAP, MIRROR_FACE_MAP, STAIR_CONNECTIONS } from '../../engine/store';
 import type { Direction, ProjectileEffect } from '../../engine/store';
 import { getGameMap } from '../../data/mapLoader';
 import type { GameMap, GameTile, TeleporterObject, SensorObject, WallTextObject, CardinalDir, DoorObject } from '../../types/game';
 import type { Champion } from '../../data/champions';
-import { Cell } from './Cell';
+import { Cell, PressurePlate } from './Cell';
 import type { CellRenderType } from './Cell';
+import { InstancedTiles } from './InstancedTiles';
 import { CreatureSprite } from './CreatureSprite';
 import { FloorItemMesh } from './FloorItemMesh';
 import { WallSensor } from './WallSensor';
+import { WallDecal } from './WallDecal';
 import { GRID_SIZE, WALL_HEIGHT } from '../../engine/constants';
 
 const HALF = GRID_SIZE / 2;
@@ -71,6 +73,13 @@ function getRenderType(tile: GameTile, level: number): CellRenderType {
             return (level === 0 && MIRROR_WALL_MAP.has(`${tile.x},${tile.y}`)) ? 'Mirror' : 'Wall';
         case 'Door':
             return 'Door';
+        case 'Stairs': {
+            const link = STAIR_CONNECTIONS.find(
+                s => s.fromLevel === level && s.fromY === tile.y && s.fromX === tile.x
+            );
+            if (link) return link.toLevel > level ? 'StairsDown' : 'StairsUp';
+            return 'Floor';
+        }
         case 'Teleporter': {
             const tp = tile.objects.find((o): o is TeleporterObject => o.category === 'Teleporter');
             if (tp && tp.destMap !== level) return tp.destMap > level ? 'StairsDown' : 'StairsUp';
@@ -245,16 +254,30 @@ const TileGrid: React.FC<{
     level: number;
     openDoors: Set<string>;
     recruitedIds: Set<number>;
-    party: ReturnType<typeof useStore>['party'];
     wallButtons: { tileX: number; tileY: number; face: CardinalDir; sensorIndex: number }[];
+    wallDecals: { tileX: number; tileY: number; face: CardinalDir; image: string }[];
+    pressurePlates: { tileX: number; tileY: number }[];
     onCellClick: (e: ThreeEvent<MouseEvent>, renderType: CellRenderType, x: number, y: number) => void;
     onWallSensor: (level: number, x: number, y: number, sensorIndex: number) => void;
-}> = memo(({ map, level, openDoors, recruitedIds, wallButtons, onCellClick, onWallSensor }) => {
+}> = memo(({ map, level, openDoors, recruitedIds, wallButtons, wallDecals, pressurePlates, onCellClick, onWallSensor  }) => {
     return (
         <group>
+            {/* One draw call each for floor, ceiling, and walls */}
+            <InstancedTiles key={level} map={map} />
+
+            {/* Pressure plates — floor-level objects */}
+            {pressurePlates.map(({ tileX, tileY }) => (
+                <group key={`plate_${tileX}_${tileY}`} position={[tileX * GRID_SIZE, 0, tileY * GRID_SIZE]}>
+                    <PressurePlate tileX={tileX} tileY={tileY} level={level} />
+                </group>
+            ))}
+
+            {/* Only Door and Mirror tiles need a Cell — everything else is instanced */}
             {map.tiles.map((row, y) =>
                 row.map((tile, x) => {
                     const renderType = getRenderType(tile, level);
+                    if (renderType !== 'Door' && renderType !== 'Mirror') return null;
+
                     const mirrorChampion: Champion | null =
                         renderType === 'Mirror' ? (MIRROR_WALL_MAP.get(`${x},${y}`) ?? null) : null;
                     const champion = mirrorChampion && !recruitedIds.has(mirrorChampion.id)
@@ -266,23 +289,11 @@ const TileGrid: React.FC<{
                         ? (tile.objects.find(o => o.category === 'Door') as DoorObject | undefined)?.hasButton ?? false
                         : undefined;
 
-                    const hasPressurePlate = renderType === 'Floor' &&
-                        tile.objects.some(o =>
-                            o.category === 'Sensor' &&
-                            !(o as SensorObject).isLocal &&
-                            (o as SensorObject).type !== 2 &&
-                            (o as SensorObject).type !== 127
-                        );
-
                     return (
                         <Cell
                             key={`${y}-${x}`}
                             type={renderType}
                             position={[x * GRID_SIZE, 0, y * GRID_SIZE]}
-                            tileX={x}
-                            tileY={y}
-                            level={level}
-                            hasPressurePlate={hasPressurePlate}
                             champion={champion}
                             frameChampion={mirrorChampion}
                             wallFace={wallFace}
@@ -294,11 +305,18 @@ const TileGrid: React.FC<{
                     );
                 })
             )}
+
             {wallButtons.map(({ tileX, tileY, face, sensorIndex }) => (
                 <WallSensor
                     key={`wsensor_${tileX}_${tileY}_${sensorIndex}`}
                     tileX={tileX} tileY={tileY} face={face}
                     onClick={() => onWallSensor(level, tileX, tileY, sensorIndex)}
+                />
+            ))}
+            {wallDecals.map(({ tileX, tileY, face, image }, i) => (
+                <WallDecal
+                    key={`wdecal_${tileX}_${tileY}_${face}_${i}`}
+                    tileX={tileX} tileY={tileY} face={face} image={image}
                 />
             ))}
         </group>
@@ -336,6 +354,78 @@ export const DungeonScene = () => {
         return buttons;
     }, [map]);
 
+    const wallDecals = useMemo(() => {
+        const OPPOSITE: Record<CardinalDir, CardinalDir> = {
+            North: 'South', South: 'North', East: 'West', West: 'East',
+        };
+        // For a Stairs tile, find the one walkable neighbour — that's the entry
+        // direction, so the image goes on the opposite (back) face.
+        const stairsBackFace = (x: number, y: number): CardinalDir => {
+            const neighbours: Array<{ dx: number; dy: number; dir: CardinalDir }> = [
+                { dx:  0, dy: -1, dir: 'North' },
+                { dx:  0, dy:  1, dir: 'South' },
+                { dx:  1, dy:  0, dir: 'East'  },
+                { dx: -1, dy:  0, dir: 'West'  },
+            ];
+            for (const { dx, dy, dir } of neighbours) {
+                const row = map.tiles[y + dy];
+                const nb  = row?.[x + dx];
+                if (nb && nb.type !== 'Wall') return OPPOSITE[dir];
+            }
+            return 'South';
+        };
+
+        const decals: { tileX: number; tileY: number; face: CardinalDir; image: string }[] = [];
+        for (const row of map.tiles) {
+            for (const tile of row) {
+                // Staircase back-wall image
+                if (tile.type === 'Stairs') {
+                    const link = STAIR_CONNECTIONS.find(
+                        s => s.fromLevel === level && s.fromY === tile.y && s.fromX === tile.x
+                    );
+                    if (link) {
+                        const face  = stairsBackFace(tile.x, tile.y);
+                        const image = link.toLevel > level ? '/misc/stairs_down.png' : '/misc/stairs_up.png';
+                        decals.push({ tileX: tile.x, tileY: tile.y, face, image });
+                    }
+                }
+                for (const obj of tile.objects) {
+                    if (obj.category === 'Sensor') {
+                        const s = obj as SensorObject;
+                        if (s.type === 0) {
+                            decals.push({ tileX: tile.x, tileY: tile.y, face: s.tilePos, image: '/misc/autel.png' });
+                        } else if (s.type === 1) {
+                            decals.push({ tileX: tile.x, tileY: tile.y, face: s.tilePos, image: '/misc/levier_haut.png' });
+                        }
+                    } else if (obj.category === 'Door') {
+                        const d = obj as DoorObject;
+                        if (d.ornate >= 1) {
+                            decals.push({ tileX: tile.x, tileY: tile.y, face: d.tilePos, image: '/misc/serrure.png' });
+                        }
+                    }
+                }
+            }
+        }
+        return decals;
+    }, [map, level]);
+
+    const pressurePlates = useMemo(() => {
+        const plates: { tileX: number; tileY: number }[] = [];
+        for (const row of map.tiles) {
+            for (const tile of row) {
+                if (tile.type === 'Wall' || tile.type === 'Door') continue;
+                const has = tile.objects.some(o =>
+                    o.category === 'Sensor' &&
+                    !(o as SensorObject).isLocal &&
+                    (o as SensorObject).type !== 2 &&
+                    (o as SensorObject).type !== 127
+                );
+                if (has) plates.push({ tileX: tile.x, tileY: tile.y });
+            }
+        }
+        return plates;
+    }, [map]);
+
     const handleCellClick = useCallback((
         e: ThreeEvent<MouseEvent>, renderType: CellRenderType, x: number, y: number,
     ) => {
@@ -367,8 +457,9 @@ export const DungeonScene = () => {
                     level={level}
                     openDoors={openDoors}
                     recruitedIds={recruitedIds}
-                    party={party}
                     wallButtons={wallButtons}
+                    wallDecals={wallDecals}
+                    pressurePlates={pressurePlates}
                     onCellClick={handleCellClick}
                     onWallSensor={activateWallSensor}
                 />
