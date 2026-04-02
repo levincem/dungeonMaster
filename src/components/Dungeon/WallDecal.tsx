@@ -30,7 +30,7 @@ const DecalSprite = ({ image, width, height }: { image: string; width: number; h
     const tex = useTexture(image);
     tex.colorSpace = THREE.SRGBColorSpace;
     return (
-        <mesh>
+        <mesh frustumCulled={false}>
             <planeGeometry args={[width, height]} />
             <meshBasicMaterial
                 map={tex}

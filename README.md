@@ -2,6 +2,8 @@
 
 ## Remerciements
 
+- Aux créateurs du jeu original (Programmation : Doug Bell, Mike Newton et Dennis Walker / Conception artistique : Andy Jaros / Conception audio : Wayne Holder / Prologue : Nancy Holder / Compositeur	: Tsukasa Tawada)
+- Au studio FTL Games
 - À la communauté Dungeon Master
 - Au site [Dungeon Master Encyclopaedia](http://dmweb.free.fr/)
 - Au projet [ReDMCSB](https://github.com/gondur/ReDMCSB_Release2), par Christophe Fontanel

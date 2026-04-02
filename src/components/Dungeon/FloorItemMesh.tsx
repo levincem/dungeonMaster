@@ -11,7 +11,7 @@ import { getItemImage } from '../../data/itemImages';
 // Item floats just above floor, centered vertically so it's clearly visible
 const FLOOR_Y  = -GRID_SIZE / 2;
 const ITEM_SIZE = GRID_SIZE * 0.38;   // square billboard
-const ITEM_Y    = FLOOR_Y + ITEM_SIZE * 0.55; // slightly above floor
+const ITEM_Y    = FLOOR_Y + ITEM_SIZE * 0.22; // resting near floor
 
 const TILEPOS_OFFSET: Record<string, [number, number]> = {
     North: [ 0,    -0.30],

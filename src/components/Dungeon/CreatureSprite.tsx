@@ -106,7 +106,7 @@ export const CreatureSprite = ({ creature }: { creature: CreatureInstance }) => 
         return () => { unsub(); };
     }, [id]);
 
-    const billboardY = -GRID_SIZE / 2 + DEFAULT_H / 2;
+    const billboardY = -GRID_SIZE / 2 + DEFAULT_H / 2 - 0.12;
     const [offX, offZ] = sideOffsetXZ(direction, side);
 
     return (

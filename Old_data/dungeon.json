@@ -2030,7 +2030,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 1,
+          "destX": 3,
+          "destY": 1
         },
         {
           "x": 3,
@@ -4249,7 +4252,8 @@
               "index": 21,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -6928,13 +6932,74 @@
               "category": "Container",
               "index": 0,
               "tilePos": "North",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 241
-              },
               "type": 121,
-              "name": "Container_121"
+              "name": "Container_121",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 241,
+                  "tilePos": "North",
+                  "type": 35,
+                  "name": "Misc_35",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 240,
+                  "tilePos": "North",
+                  "type": 30,
+                  "name": "Misc_30",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 239,
+                  "tilePos": "North",
+                  "type": 32,
+                  "name": "Rabbit's Foot",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 238,
+                  "tilePos": "North",
+                  "type": 31,
+                  "name": "Misc_31",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 237,
+                  "tilePos": "North",
+                  "type": 31,
+                  "name": "Misc_31",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 236,
+                  "tilePos": "North",
+                  "type": 42,
+                  "name": "Misc_42",
+                  "important": true
+                },
+                {
+                  "category": "Scroll",
+                  "index": 3,
+                  "tilePos": "North",
+                  "open": false,
+                  "textOffset": 531,
+                  "text": "AVE A\nVALUABLE\nON FLOOR"
+                },
+                {
+                  "category": "Potion",
+                  "index": 3,
+                  "tilePos": "North",
+                  "type": 0,
+                  "name": "Mon Potion",
+                  "colorVariant": 0
+                }
+              ]
             }
           ]
         },
@@ -6950,7 +7015,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 0,
+          "destX": 3,
+          "destY": 15
         },
         {
           "x": 3,
@@ -8393,7 +8461,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 2,
+          "destX": 1,
+          "destY": 30
         },
         {
           "x": 6,
@@ -12574,21 +12645,24 @@
               "index": 0,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Potion",
               "index": 1,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Potion",
               "index": 7,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Misc",
@@ -15200,13 +15274,34 @@
               "category": "Container",
               "index": 10,
               "tilePos": "North",
-              "firstContent": {
-                "pos": 0,
-                "category": 7,
-                "index": 23
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Scroll",
+                  "index": 23,
+                  "tilePos": "North",
+                  "open": true,
+                  "textOffset": 524,
+                  "text": "RTCUT"
+                },
+                {
+                  "category": "Potion",
+                  "index": 48,
+                  "tilePos": "North",
+                  "type": 24,
+                  "name": "Waterskin (water)",
+                  "colorVariant": 3
+                },
+                {
+                  "category": "Potion",
+                  "index": 47,
+                  "tilePos": "North",
+                  "type": 24,
+                  "name": "Waterskin (water)",
+                  "colorVariant": 3
+                }
+              ]
             }
           ]
         },
@@ -16728,13 +16823,50 @@
               "category": "Container",
               "index": 7,
               "tilePos": "East",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 231
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 231,
+                  "tilePos": "North",
+                  "type": 7,
+                  "name": "(Unknown_7)",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 230,
+                  "tilePos": "North",
+                  "type": 6,
+                  "name": "Bread",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 229,
+                  "tilePos": "North",
+                  "type": 6,
+                  "name": "Bread",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 228,
+                  "tilePos": "North",
+                  "type": 6,
+                  "name": "Bread",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 227,
+                  "tilePos": "North",
+                  "type": 42,
+                  "name": "Misc_42",
+                  "important": true
+                }
+              ]
             },
             {
               "category": "Creature",
@@ -16931,13 +17063,18 @@
               "category": "Container",
               "index": 8,
               "tilePos": "West",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 41
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 41,
+                  "tilePos": "North",
+                  "type": 44,
+                  "name": "Misc_44",
+                  "important": true
+                }
+              ]
             }
           ]
         },
@@ -17341,7 +17478,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 1,
+          "destX": 6,
+          "destY": 26
         },
         {
           "x": 1,
@@ -18617,7 +18757,7 @@
               "index": 26,
               "tilePos": "West",
               "type": 7,
-              "name": "(M7)",
+              "name": "(Unknown_7)",
               "important": true
             }
           ]
@@ -22359,13 +22499,58 @@
               "category": "Container",
               "index": 1,
               "tilePos": "East",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 210
-              },
               "type": 121,
-              "name": "Container_121"
+              "name": "Container_121",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 210,
+                  "tilePos": "North",
+                  "type": 29,
+                  "name": "Misc_29",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 209,
+                  "tilePos": "North",
+                  "type": 32,
+                  "name": "Rabbit's Foot",
+                  "important": true
+                },
+                {
+                  "category": "Scroll",
+                  "index": 5,
+                  "tilePos": "North",
+                  "open": true,
+                  "textOffset": 532,
+                  "text": "A\nVALUABLE\nON FLOOR"
+                },
+                {
+                  "category": "Scroll",
+                  "index": 4,
+                  "tilePos": "North",
+                  "open": true,
+                  "textOffset": 531,
+                  "text": "AVE A\nVALUABLE\nON FLOOR"
+                },
+                {
+                  "category": "Misc",
+                  "index": 25,
+                  "tilePos": "North",
+                  "type": 8,
+                  "name": "Apple",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 24,
+                  "tilePos": "North",
+                  "type": 8,
+                  "name": "Apple",
+                  "important": true
+                }
+              ]
             }
           ]
         },
@@ -25417,7 +25602,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 3,
+          "destX": 30,
+          "destY": 31
         },
         {
           "x": 25,
@@ -26191,7 +26379,8 @@
               "index": 25,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -26234,7 +26423,8 @@
               "index": 49,
               "tilePos": "South",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -28893,7 +29083,8 @@
               "index": 4,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -29728,7 +29919,8 @@
               "index": 6,
               "tilePos": "South",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -29758,7 +29950,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 4,
+          "destX": 1,
+          "destY": 8
         },
         {
           "x": 6,
@@ -29877,7 +30072,8 @@
               "index": 22,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -30235,7 +30431,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 4,
+          "destX": 2,
+          "destY": 12
         },
         {
           "x": 7,
@@ -32300,7 +32499,8 @@
               "index": 5,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -37136,7 +37336,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 2,
+          "destX": 25,
+          "destY": 21
         },
         {
           "x": 31,
@@ -37778,7 +37981,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 3,
+          "destX": 6,
+          "destY": 8
         },
         {
           "x": 1,
@@ -38105,7 +38311,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 3,
+          "destX": 7,
+          "destY": 12
         },
         {
           "x": 2,
@@ -38995,7 +39204,8 @@
               "index": 20,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -39546,7 +39756,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 5,
+          "destX": 6,
+          "destY": 20
         },
         {
           "x": 6,
@@ -39705,13 +39918,34 @@
               "category": "Container",
               "index": 2,
               "tilePos": "North",
-              "firstContent": {
-                "pos": 0,
-                "category": 8,
-                "index": 35
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Potion",
+                  "index": 35,
+                  "tilePos": "North",
+                  "type": 16,
+                  "name": "Vitality Potion",
+                  "colorVariant": 2
+                },
+                {
+                  "category": "Misc",
+                  "index": 178,
+                  "tilePos": "North",
+                  "type": 42,
+                  "name": "Misc_42",
+                  "important": true
+                },
+                {
+                  "category": "Potion",
+                  "index": 34,
+                  "tilePos": "North",
+                  "type": 29,
+                  "name": "Potion_29",
+                  "colorVariant": 3
+                }
+              ]
             }
           ]
         },
@@ -40038,7 +40272,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 5,
+          "destX": 8,
+          "destY": 1
         },
         {
           "x": 8,
@@ -40388,7 +40625,8 @@
               "index": 19,
               "tilePos": "West",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -40431,15 +40669,17 @@
               "category": "Potion",
               "index": 31,
               "tilePos": "East",
-              "type": 120,
-              "name": "Potion_120"
+              "type": 24,
+              "name": "Waterskin (water)",
+              "colorVariant": 3
             },
             {
               "category": "Potion",
               "index": 32,
               "tilePos": "North",
-              "type": 112,
-              "name": "Potion_112"
+              "type": 16,
+              "name": "Vitality Potion",
+              "colorVariant": 3
             }
           ]
         },
@@ -40452,8 +40692,9 @@
               "category": "Potion",
               "index": 33,
               "tilePos": "South",
-              "type": 40,
-              "name": "Potion_40"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 1
             }
           ]
         },
@@ -49606,7 +49847,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 4,
+          "destX": 6,
+          "destY": 25
         },
         {
           "x": 6,
@@ -49757,8 +50001,9 @@
               "category": "Potion",
               "index": 36,
               "tilePos": "West",
-              "type": 60,
-              "name": "Potion_60"
+              "type": 28,
+              "name": "Potion_28",
+              "colorVariant": 1
             }
           ]
         },
@@ -50149,7 +50394,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 4,
+          "destX": 8,
+          "destY": 6
         },
         {
           "x": 8,
@@ -50800,13 +51048,38 @@
               "category": "Container",
               "index": 9,
               "tilePos": "East",
-              "firstContent": {
-                "pos": 0,
-                "category": 5,
-                "index": 100
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Weapon",
+                  "index": 100,
+                  "tilePos": "North",
+                  "type": 28,
+                  "name": "(W28)",
+                  "broken": false,
+                  "charges": 0,
+                  "poisoned": false,
+                  "cursed": false,
+                  "important": true
+                },
+                {
+                  "category": "Potion",
+                  "index": 46,
+                  "tilePos": "North",
+                  "type": 0,
+                  "name": "Mon Potion",
+                  "colorVariant": 0
+                },
+                {
+                  "category": "Misc",
+                  "index": 147,
+                  "tilePos": "North",
+                  "type": 35,
+                  "name": "Misc_35",
+                  "important": true
+                }
+              ]
             }
           ]
         },
@@ -51280,8 +51553,9 @@
               "category": "Potion",
               "index": 41,
               "tilePos": "West",
-              "type": 100,
-              "name": "Potion_100"
+              "type": 4,
+              "name": "Ful Potion",
+              "colorVariant": 3
             }
           ]
         },
@@ -55818,14 +56092,16 @@
               "index": 8,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Potion",
               "index": 9,
               "tilePos": "West",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -56825,7 +57101,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 6,
+          "destX": 25,
+          "destY": 25
         },
         {
           "x": 25,
@@ -59121,21 +59400,24 @@
               "index": 15,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Potion",
               "index": 16,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Potion",
               "index": 17,
               "tilePos": "East",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -59653,15 +59935,17 @@
               "category": "Potion",
               "index": 29,
               "tilePos": "South",
-              "type": 127,
-              "name": "Potion_127"
+              "type": 31,
+              "name": "Potion_31",
+              "colorVariant": 3
             },
             {
               "category": "Potion",
               "index": 30,
               "tilePos": "South",
-              "type": 127,
-              "name": "Potion_127"
+              "type": 31,
+              "name": "Potion_31",
+              "colorVariant": 3
             }
           ]
         },
@@ -63474,7 +63758,8 @@
               "index": 40,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -64575,7 +64860,8 @@
               "index": 18,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -65053,7 +65339,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 7,
+          "destX": 7,
+          "destY": 23
         },
         {
           "x": 22,
@@ -65969,7 +66258,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 5,
+          "destX": 25,
+          "destY": 25
         },
         {
           "x": 25,
@@ -66638,7 +66930,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 7,
+          "destX": 12,
+          "destY": 20
         },
         {
           "x": 27,
@@ -68368,13 +68663,18 @@
               "category": "Container",
               "index": 6,
               "tilePos": "South",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 207
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 207,
+                  "tilePos": "North",
+                  "type": 16,
+                  "name": "Jewel Symal",
+                  "important": true
+                }
+              ]
             }
           ]
         },
@@ -68400,7 +68700,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 11,
+          "destY": 11
         },
         {
           "x": 3,
@@ -68857,7 +69160,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 12,
+          "destY": 26
         },
         {
           "x": 4,
@@ -69176,13 +69482,26 @@
               "category": "Container",
               "index": 3,
               "tilePos": "South",
-              "firstContent": {
-                "pos": 0,
-                "category": 8,
-                "index": 55
-              },
               "type": 121,
-              "name": "Container_121"
+              "name": "Container_121",
+              "contents": [
+                {
+                  "category": "Potion",
+                  "index": 55,
+                  "tilePos": "North",
+                  "type": 12,
+                  "name": "Potion_12",
+                  "colorVariant": 0
+                },
+                {
+                  "category": "Scroll",
+                  "index": 11,
+                  "tilePos": "North",
+                  "open": false,
+                  "textOffset": 541,
+                  "text": "E BACK\nBRAVE\nADVENTURERS."
+                }
+              ]
             }
           ]
         },
@@ -69420,7 +69739,8 @@
               "index": 10,
               "tilePos": "South",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Misc",
@@ -69779,7 +70099,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 6,
+          "destX": 22,
+          "destY": 29
         },
         {
           "x": 7,
@@ -70006,7 +70329,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 16,
+          "destY": 25
         },
         {
           "x": 8,
@@ -70384,7 +70710,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 17,
+          "destY": 29
         },
         {
           "x": 9,
@@ -70917,8 +71246,9 @@
               "category": "Potion",
               "index": 44,
               "tilePos": "North",
-              "type": 92,
-              "name": "Potion_92"
+              "type": 28,
+              "name": "Potion_28",
+              "colorVariant": 2
             },
             {
               "category": "Misc",
@@ -71179,7 +71509,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 6,
+          "destX": 27,
+          "destY": 26
         },
         {
           "x": 12,
@@ -76214,15 +76547,17 @@
               "category": "Potion",
               "index": 38,
               "tilePos": "West",
-              "type": 120,
-              "name": "Potion_120"
+              "type": 24,
+              "name": "Waterskin (water)",
+              "colorVariant": 3
             },
             {
               "category": "Potion",
               "index": 39,
               "tilePos": "South",
-              "type": 120,
-              "name": "Potion_120"
+              "type": 24,
+              "name": "Waterskin (water)",
+              "colorVariant": 3
             }
           ]
         },
@@ -79526,7 +79861,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 12,
+          "destY": 0
         },
         {
           "x": 10,
@@ -79930,7 +80268,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 7,
+          "destX": 3,
+          "destY": 5
         },
         {
           "x": 11,
@@ -80393,7 +80734,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 7,
+          "destX": 4,
+          "destY": 20
         },
         {
           "x": 12,
@@ -80871,7 +81215,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 16,
+          "destY": 12
         },
         {
           "x": 14,
@@ -81488,7 +81835,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 7,
+          "destX": 8,
+          "destY": 19
         },
         {
           "x": 16,
@@ -81502,7 +81852,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 18,
+          "destY": 22
         },
         {
           "x": 16,
@@ -81821,7 +82174,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 7,
+          "destX": 9,
+          "destY": 23
         },
         {
           "x": 17,
@@ -81997,7 +82353,8 @@
               "index": 13,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Scroll",
@@ -82446,7 +82803,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 21,
+          "destY": 24
         },
         {
           "x": 19,
@@ -83578,15 +83938,17 @@
               "category": "Potion",
               "index": 11,
               "tilePos": "South",
-              "type": 72,
-              "name": "Potion_72"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 2
             },
             {
               "category": "Potion",
               "index": 23,
               "tilePos": "West",
-              "type": 120,
-              "name": "Potion_120"
+              "type": 24,
+              "name": "Waterskin (water)",
+              "colorVariant": 3
             }
           ]
         },
@@ -84828,20 +85190,34 @@
               "category": "Potion",
               "index": 12,
               "tilePos": "South",
-              "type": 50,
-              "name": "Potion_50"
+              "type": 18,
+              "name": "Anti-Fire Potion",
+              "colorVariant": 1
             },
             {
               "category": "Container",
               "index": 5,
               "tilePos": "West",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 72
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 72,
+                  "tilePos": "North",
+                  "type": 28,
+                  "name": "Misc_28",
+                  "important": true
+                },
+                {
+                  "category": "Scroll",
+                  "index": 12,
+                  "tilePos": "North",
+                  "open": false,
+                  "textOffset": 525,
+                  "text": "UT"
+                }
+              ]
             }
           ]
         },
@@ -87086,7 +87462,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 10,
+          "destX": 4,
+          "destY": 0
         },
         {
           "x": 4,
@@ -89591,7 +89970,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 10,
+          "destY": 5
         },
         {
           "x": 12,
@@ -90935,7 +91317,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 14,
+          "destY": 17
         },
         {
           "x": 16,
@@ -91411,7 +91796,8 @@
               "index": 14,
               "tilePos": "North",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Armor",
@@ -91710,7 +92096,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 16,
+          "destY": 27
         },
         {
           "x": 18,
@@ -91724,7 +92113,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 10,
+          "destX": 18,
+          "destY": 24
         },
         {
           "x": 18,
@@ -92638,7 +93030,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 8,
+          "destX": 19,
+          "destY": 29
         },
         {
           "x": 21,
@@ -93455,7 +93850,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 10,
+          "destX": 23,
+          "destY": 24
         },
         {
           "x": 23,
@@ -94163,15 +94561,17 @@
               "category": "Potion",
               "index": 42,
               "tilePos": "East",
-              "type": 72,
-              "name": "Potion_72"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 2
             },
             {
               "category": "Potion",
               "index": 43,
               "tilePos": "South",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             },
             {
               "category": "Misc",
@@ -97531,7 +97931,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 4,
+          "destY": 0
         },
         {
           "x": 4,
@@ -100091,13 +100494,18 @@
               "category": "Container",
               "index": 4,
               "tilePos": "East",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 71
-              },
               "type": 1,
-              "name": "Container_1"
+              "name": "Container_1",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 71,
+                  "tilePos": "North",
+                  "type": 11,
+                  "name": "Misc_11",
+                  "important": true
+                }
+              ]
             }
           ]
         },
@@ -102351,7 +102759,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 18,
+          "destY": 24
         },
         {
           "x": 18,
@@ -102365,7 +102776,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 11,
+          "destX": 8,
+          "destY": 16
         },
         {
           "x": 18,
@@ -104220,7 +104634,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 9,
+          "destX": 23,
+          "destY": 24
         },
         {
           "x": 23,
@@ -104521,7 +104938,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 11,
+          "destX": 14,
+          "destY": 18
         },
         {
           "x": 24,
@@ -104786,7 +105206,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 11,
+          "destX": 15,
+          "destY": 14
         },
         {
           "x": 25,
@@ -104855,8 +105278,9 @@
               "category": "Potion",
               "index": 24,
               "tilePos": "East",
-              "type": 92,
-              "name": "Potion_92"
+              "type": 28,
+              "name": "Potion_28",
+              "colorVariant": 2
             },
             {
               "category": "Misc",
@@ -104915,8 +105339,9 @@
               "category": "Potion",
               "index": 50,
               "tilePos": "East",
-              "type": 92,
-              "name": "Potion_92"
+              "type": 28,
+              "name": "Potion_28",
+              "colorVariant": 2
             }
           ]
         },
@@ -105295,8 +105720,9 @@
               "category": "Potion",
               "index": 51,
               "tilePos": "North",
-              "type": 92,
-              "name": "Potion_92"
+              "type": 28,
+              "name": "Potion_28",
+              "colorVariant": 2
             }
           ]
         },
@@ -105946,13 +106372,74 @@
               "category": "Container",
               "index": 11,
               "tilePos": "West",
-              "firstContent": {
-                "pos": 0,
-                "category": 10,
-                "index": 263
-              },
               "type": 0,
-              "name": "Chest"
+              "name": "Chest",
+              "contents": [
+                {
+                  "category": "Misc",
+                  "index": 263,
+                  "tilePos": "North",
+                  "type": 35,
+                  "name": "Misc_35",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 262,
+                  "tilePos": "North",
+                  "type": 35,
+                  "name": "Misc_35",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 261,
+                  "tilePos": "North",
+                  "type": 35,
+                  "name": "Misc_35",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 260,
+                  "tilePos": "North",
+                  "type": 32,
+                  "name": "Rabbit's Foot",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 259,
+                  "tilePos": "North",
+                  "type": 31,
+                  "name": "Misc_31",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 258,
+                  "tilePos": "North",
+                  "type": 35,
+                  "name": "Misc_35",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 257,
+                  "tilePos": "North",
+                  "type": 32,
+                  "name": "Rabbit's Foot",
+                  "important": true
+                },
+                {
+                  "category": "Misc",
+                  "index": 256,
+                  "tilePos": "North",
+                  "type": 31,
+                  "name": "Misc_31",
+                  "important": true
+                }
+              ]
             }
           ]
         },
@@ -108775,7 +109262,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 10,
+          "destX": 18,
+          "destY": 26
         },
         {
           "x": 8,
@@ -108789,7 +109279,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 12,
+          "destX": 3,
+          "destY": 8
         },
         {
           "x": 8,
@@ -109257,7 +109750,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 12,
+          "destX": 5,
+          "destY": 2
         },
         {
           "x": 10,
@@ -110454,7 +110950,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 10,
+          "destX": 24,
+          "destY": 28
         },
         {
           "x": 14,
@@ -110710,7 +111209,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 10,
+          "destX": 25,
+          "destY": 24
         },
         {
           "x": 15,
@@ -110728,7 +111230,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 12,
+          "destX": 10,
+          "destY": 6
         },
         {
           "x": 15,
@@ -112591,8 +113096,9 @@
               "category": "Potion",
               "index": 52,
               "tilePos": "South",
-              "type": 72,
-              "name": "Potion_72"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 2
             }
           ]
         },
@@ -114344,8 +114850,9 @@
               "category": "Potion",
               "index": 28,
               "tilePos": "South",
-              "type": 72,
-              "name": "Potion_72"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 2
             }
           ]
         },
@@ -114480,8 +114987,9 @@
               "category": "Potion",
               "index": 53,
               "tilePos": "West",
-              "type": 127,
-              "name": "Potion_127"
+              "type": 31,
+              "name": "Potion_31",
+              "colorVariant": 3
             }
           ]
         },
@@ -114742,15 +115250,17 @@
               "category": "Potion",
               "index": 26,
               "tilePos": "North",
-              "type": 72,
-              "name": "Potion_72"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 2
             },
             {
               "category": "Potion",
               "index": 27,
               "tilePos": "East",
-              "type": 72,
-              "name": "Potion_72"
+              "type": 8,
+              "name": "Health Potion",
+              "colorVariant": 2
             },
             {
               "category": "Misc",
@@ -114773,7 +115283,8 @@
               "index": 54,
               "tilePos": "West",
               "type": 0,
-              "name": "Mon Potion"
+              "name": "Mon Potion",
+              "colorVariant": 0
             }
           ]
         },
@@ -116480,7 +116991,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 11,
+          "destX": 8,
+          "destY": 18
         },
         {
           "x": 3,
@@ -116494,7 +117008,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 13,
+          "destX": 3,
+          "destY": 8
         },
         {
           "x": 3,
@@ -116774,7 +117291,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 11,
+          "destX": 10,
+          "destY": 12
         },
         {
           "x": 5,
@@ -117037,7 +117557,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": false,
-          "objects": []
+          "objects": [],
+          "destMap": 13,
+          "destX": 6,
+          "destY": 9
         },
         {
           "x": 6,
@@ -117723,7 +118246,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 11,
+          "destX": 15,
+          "destY": 16
         },
         {
           "x": 10,
@@ -120518,7 +121044,10 @@
           "type": "Stairs",
           "orientation": "NorthSouth",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 12,
+          "destX": 3,
+          "destY": 10
         },
         {
           "x": 3,
@@ -120902,7 +121431,10 @@
           "type": "Stairs",
           "orientation": "WestEast",
           "up": true,
-          "objects": []
+          "objects": [],
+          "destMap": 12,
+          "destX": 6,
+          "destY": 11
         },
         {
           "x": 6,
@@ -121341,7 +121873,7 @@
               "index": 130,
               "tilePos": "South",
               "type": 7,
-              "name": "(M7)",
+              "name": "(Unknown_7)",
               "important": true
             }
           ]
@@ -121374,7 +121906,7 @@
               "index": 205,
               "tilePos": "North",
               "type": 7,
-              "name": "(M7)",
+              "name": "(Unknown_7)",
               "important": true
             }
           ]
@@ -121706,7 +122238,7 @@
               "index": 85,
               "tilePos": "North",
               "type": 7,
-              "name": "(M7)",
+              "name": "(Unknown_7)",
               "important": true
             },
             {
@@ -123044,7 +123576,7 @@
               "index": 276,
               "tilePos": "West",
               "type": 7,
-              "name": "(M7)",
+              "name": "(Unknown_7)",
               "important": true
             }
           ]

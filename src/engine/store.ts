@@ -982,15 +982,21 @@ export const useStore = create<GameState>((set) => ({
             case 'poison':
             case 'plasma': {
                 const [py, px] = state.position;
+                // Start one tile ahead of the player so it's visible from cast
+                let startX = px, startY = py;
+                if      (state.direction === 'NORTH') startY--;
+                else if (state.direction === 'SOUTH') startY++;
+                else if (state.direction === 'EAST')  startX++;
+                else                                   startX--;
                 const newProj: Projectile = {
                     id: `proj_${now}_${Math.random().toString(36).slice(2)}`,
                     level: state.level,
-                    x: px,
-                    y: py,
+                    x: startX,
+                    y: startY,
                     direction: state.direction,
                     effect: spell.effect as ProjectileEffect,
                     damage: [Math.round(spell.manaCost * 3), Math.round(spell.manaCost * 5)],
-                    nextMoveAt: now + 150,
+                    nextMoveAt: now + 300,
                 };
                 return {
                     ...base,
@@ -1244,6 +1250,7 @@ export const useStore = create<GameState>((set) => ({
 
         let creatures = state.creatures as CreatureInstance[];
         let vitals    = state.championVitals;
+        let dmgEvts   = state.damageEvents;
         let anyChange = false;
 
         for (let i = 0; i < creatures.length; i++) {
@@ -1330,6 +1337,10 @@ export const useStore = create<GameState>((set) => ({
                         const dmg  = Math.max(1, raw);
                         const newHP = Math.max(0, tv.hp - dmg);
                         vitals = { ...vitals, [target.id]: { ...tv, hp: newHP } };
+                        dmgEvts = [...dmgEvts, {
+                            id: `mdmg_${Date.now()}_${c.id}`,
+                            x: c.x, y: c.y, amount: dmg, ts: Date.now(),
+                        }];
                         anyChange = true;
                     }
                 }
@@ -1358,7 +1369,8 @@ export const useStore = create<GameState>((set) => ({
         if (!anyChange && creatures === state.creatures) return state;
         return {
             creatures,
-            ...(vitals !== state.championVitals ? { championVitals: vitals } : {}),
+            ...(vitals !== state.championVitals   ? { championVitals: vitals }   : {}),
+            ...(dmgEvts !== state.damageEvents     ? { damageEvents: dmgEvts }    : {}),
         };
     }),
 
