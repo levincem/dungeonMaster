@@ -1,85 +1,104 @@
-# Dungeon Master
+# Dungeon Master Codex
 
-## Remerciements
+A remake / reinterpretation of *Dungeon Master* built with React, TypeScript, Vite, and React Three Fiber.
 
-- Aux créateurs du jeu original (Programmation : Doug Bell, Mike Newton et Dennis Walker / Conception artistique : Andy Jaros / Conception audio : Wayne Holder / Prologue : Nancy Holder / Compositeur	: Tsukasa Tawada)
-- Au studio FTL Games
-- À la communauté Dungeon Master
-- Au site [Dungeon Master Encyclopaedia](http://dmweb.free.fr/)
-- Au projet [ReDMCSB](https://github.com/gondur/ReDMCSB_Release2), par Christophe Fontanel
+The goal of this project is to recreate dungeon exploration, champions, spells, items, and mechanisms from the original game while keeping a modern codebase that is easier to evolve and maintain.
 
----
+Note: I am neither a professional artist nor a professional game developer (my background is PHP / JavaScript development and server administration). This is a non-commercial amateur project. The graphics are generated with DALL-E / ChatGPT. A large part of the codebase has been written with Claude 4.6 and GPT-4.5.
 
-# React + TypeScript + Vite
+## Project Status
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The project is already playable and includes a substantial part of the core systems:
 
-Currently, two official plugins are available:
+- 3D dungeon exploration
+- grid-based party movement
+- champion recruitment
+- HUD and character sheets
+- inventory, equipment, item drop and pickup systems
+- creatures, combat, and projectiles
+- spells, lighting effects, and dungeon mechanisms
+- loading historical data from `Old_data`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Some content and systems still need refinement.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React
+- TypeScript
+- Vite
+- Three.js
+- `@react-three/fiber`
+- `@react-three/drei`
+- Zustand
 
-## Expanding the ESLint configuration
+## Running the Project
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Installation
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+### Production Build
+
+```bash
+npm run build
+```
+
+## Project Structure
+
+```text
+src/
+  components/
+    Dungeon/     3D scene, tiles, creatures, items, decals
+    UI/          HUD, screens, mirror popup, champion sheet
+  data/          Game data, loaders, definitions
+  engine/        Zustand store, global logic, sounds, constants
+  types/         Shared types
+
+Old_data/
+  dungeon.json
+  game_db.json
+  mechanisms.json
+```
+
+## Source Data
+
+The project relies on data from `Old_data/`, especially:
+
+- `dungeon.json` for maps, object placement, and tile content
+- `game_db.json` for runes, spells, items, and various references
+- `mechanisms.json` for dungeon mechanisms
+
+These files are used as a foundation to rebuild the original game's behavior in a modern web architecture.
+
+## Development Notes
+
+- The main bundle is still relatively large because of dungeon data and the 3D stack.
+- The TypeScript build is currently valid.
+- The full Vite production build also works in an environment that allows the required subprocess execution.
+
+## Possible Roadmap
+
+- improve bundle splitting further
+- continue visual polish for the dungeon
+- complete missing interactions, effects, and behaviors
+- expand the project's technical documentation
+
+## Credits
+
+- To the creators of the original game: Doug Bell, Mike Newton, Dennis Walker, Andy Jaros, Wayne Holder, Nancy Holder, Tsukasa Tawada
+- To FTL Games
+- To the Dungeon Master community
+- To the [Dungeon Master Encyclopaedia](http://dmweb.free.fr/)
+- To the [ReDMCSB](https://github.com/gondur/ReDMCSB_Release2) project by Christophe Fontanel
+
+## Note
+
+This project is a technical and creative tribute to *Dungeon Master*. It aims to preserve the spirit of the original game while adapting it to a modern web implementation.
