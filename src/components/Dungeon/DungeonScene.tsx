@@ -5,7 +5,8 @@ import { PerspectiveCamera, Plane, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore, MIRROR_WALL_MAP, MIRROR_FACE_MAP, STAIR_CONNECTIONS } from '../../engine/store';
 import { getMapMechanisms } from '../../data/mechanisms';
-import type { Direction, ProjectileEffect } from '../../engine/store';
+import type { Direction, ProjectileEffect, FootprintEntry } from '../../engine/store';
+import { computeLightLevel } from '../../engine/store';
 import { getGameMap } from '../../data/mapLoader';
 import type { GameMap, GameTile, TeleporterObject, SensorObject, WallTextObject, CardinalDir, DoorObject } from '../../types/game';
 import type { Champion } from '../../data/champions';
@@ -156,21 +157,24 @@ const WallTextOverlay = ({
     );
 };
 
-// ─── Fog controller ───────────────────────────────────────────────────────────
+// ─── Light controller — drives ambientLight intensity from lightLevel ─────────
 const BASE_FOG_FAR = GRID_SIZE * 7;
 
-const FogController: React.FC = () => {
-    const spellLights = useStore(s => s.spellLights);
-    const { scene } = useThree();
+const LightController: React.FC = () => {
+    const spellLights      = useStore(s => s.spellLights);
+    const torchBurnStart   = useStore(s => s.torchBurnStart);
+    const championEquipment = useStore(s => s.championEquipment);
+    const lightRef = useRef<THREE.AmbientLight>(null);
+
     useFrame(() => {
-        const fog = scene.fog as THREE.Fog | null;
-        if (!fog) return;
-        const now = Date.now();
-        const active = spellLights.filter(l => l.expiresAt > now);
-        const maxMult = active.length > 0 ? Math.max(...active.map(l => l.fogMult)) : 1.0;
-        fog.far += (BASE_FOG_FAR * maxMult - fog.far) * 0.04;
+        if (!lightRef.current) return;
+        const level  = computeLightLevel(spellLights, torchBurnStart, championEquipment);
+        // Lerp for smooth transitions; minimum 0.04 so pitch-black is reachable
+        const target = Math.max(0, level) * 2.0;
+        lightRef.current.intensity += (target - lightRef.current.intensity) * 0.04;
     });
-    return null;
+
+    return <ambientLight ref={lightRef} intensity={2.0} />;
 };
 
 // ─── Projectile renderer ──────────────────────────────────────────────────────
@@ -189,6 +193,96 @@ const ProjectileRenderer: React.FC = () => {
                     <mesh><sphereGeometry args={[0.14, 8, 8]} /><meshBasicMaterial color="#ffffff" /></mesh>
                 </group>
             ))}
+        </>
+    );
+};
+
+// ─── Magic vision — red halos around hidden sensors + pressure plates ─────────
+const MagicVisionLayer: React.FC<{
+    wallButtons: { tileX: number; tileY: number; face: CardinalDir }[];
+    pressurePlates: { tileX: number; tileY: number }[];
+}> = ({ wallButtons, pressurePlates }) => {
+    const magicVisionUntil = useStore(s => s.magicVisionUntil);
+    const pulseRef = useRef(0);
+    useFrame(() => { pulseRef.current += 0.04; });
+
+    if (Date.now() >= magicVisionUntil) return null;
+
+    const FACE_OFFSET: Record<CardinalDir, [number, number]> = {
+        North: [0, -HALF], South: [0, HALF], East: [HALF, 0], West: [-HALF, 0],
+    };
+
+    return (
+        <>
+            {wallButtons.map(({ tileX, tileY, face }) => {
+                const [ox, oz] = FACE_OFFSET[face];
+                return (
+                    <mesh key={`mv_btn_${tileX}_${tileY}_${face}`}
+                        position={[tileX * GRID_SIZE + ox, 0, tileY * GRID_SIZE + oz]}
+                        frustumCulled={false}
+                    >
+                        <sphereGeometry args={[0.22, 8, 8]} />
+                        <meshBasicMaterial color="#ff2222" transparent opacity={0.55} depthWrite={false} />
+                    </mesh>
+                );
+            })}
+            {pressurePlates.map(({ tileX, tileY }) => (
+                <mesh key={`mv_plate_${tileX}_${tileY}`}
+                    position={[tileX * GRID_SIZE, -WALL_HEIGHT / 2 + 0.02, tileY * GRID_SIZE]}
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    frustumCulled={false}
+                >
+                    <planeGeometry args={[GRID_SIZE * 0.8, GRID_SIZE * 0.8]} />
+                    <meshBasicMaterial color="#ff2222" transparent opacity={0.35} depthWrite={false} />
+                </mesh>
+            ))}
+        </>
+    );
+};
+
+// ─── Footprint trail — fading floor planes ────────────────────────────────────
+const FOOTPRINT_LIFETIME_MS = 60_000;
+
+const FootprintLayer: React.FC = () => {
+    const footprintHistory = useStore(s => s.footprintHistory);
+    const level = useStore(s => s.level);
+    const meshRefs = useRef<Map<string, THREE.Mesh>>(new Map());
+
+    useFrame(() => {
+        const now = Date.now();
+        for (const [key, mesh] of meshRefs.current) {
+            if (!mesh) continue;
+            const parts = key.split(',');
+            const ts = parseInt(parts[2]);
+            const age = now - ts;
+            const opacity = Math.max(0, (FOOTPRINT_LIFETIME_MS - age) / FOOTPRINT_LIFETIME_MS);
+            (mesh.material as THREE.MeshBasicMaterial).opacity = opacity * 0.45;
+            mesh.visible = opacity > 0.01;
+        }
+    });
+
+    const currentFootprints = footprintHistory.filter(e => e.level === level);
+
+    return (
+        <>
+            {currentFootprints.map((e: FootprintEntry) => {
+                const key = `${e.x},${e.y},${e.ts}`;
+                return (
+                    <mesh
+                        key={key}
+                        ref={(m) => {
+                            if (m) meshRefs.current.set(key, m);
+                            else meshRefs.current.delete(key);
+                        }}
+                        position={[e.x * GRID_SIZE, -WALL_HEIGHT / 2 + 0.03, e.y * GRID_SIZE]}
+                        rotation={[-Math.PI / 2, 0, 0]}
+                        frustumCulled={false}
+                    >
+                        <planeGeometry args={[GRID_SIZE * 0.6, GRID_SIZE * 0.6]} />
+                        <meshBasicMaterial color="#66ccff" transparent opacity={0.45} depthWrite={false} />
+                    </mesh>
+                );
+            })}
         </>
     );
 };
@@ -452,9 +546,8 @@ export const DungeonScene = () => {
 
             <Canvas gl={{ localClippingEnabled: true }}>
                 <fog attach="fog" args={['#000000', GRID_SIZE * 2, BASE_FOG_FAR]} />
-                <FogController />
+                <LightController />
                 <CameraController />
-                <ambientLight intensity={2.0} />
                 <BoundaryWalls map={map} />
 
                 <TileGrid
@@ -469,6 +562,8 @@ export const DungeonScene = () => {
                     onWallSensor={activateWallSensor}
                 />
 
+                <FootprintLayer />
+                <MagicVisionLayer wallButtons={wallButtons} pressurePlates={pressurePlates} />
                 <CreaturesLayer />
                 <DamageLayer />
                 <FloorItemsLayer />

@@ -41,11 +41,54 @@ export interface DamageEvent {
     ts: number;    // Date.now() — auto-cleared after ~600 ms
 }
 
-// ─── Spell lights (torch / light spells — extend fog visibility) ─────────────
+// ─── Torch burn lifecycle ──────────────────────────────────────────────────────
+export const TORCH_LIFETIME_MS  = 15 * 60 * 1000;  // 15 min total
+export const TORCH_STATE_MS     =  5 * 60 * 1000;  // 5 min per visual state
+
+/** Return 0=unlit, 1=used_2, 2=used_1, 3=lit based on ms elapsed since lit */
+export function torchStateIndex(elapsedMs: number): number {
+    if (elapsedMs >= TORCH_LIFETIME_MS)        return 0; // burnt out
+    if (elapsedMs >= TORCH_STATE_MS * 2)       return 1; // used_2
+    if (elapsedMs >= TORCH_STATE_MS)           return 2; // used_1
+    return 3;                                            // fresh lit
+}
+
+// ─── Spell lights (torch / light spells) ─────────────────────────────────────
 export interface SpellLight {
     id: string;
-    fogMult: number;    // multiply fog far distance (e.g. 1.4 = +40% view)
-    expiresAt: number;  // Date.now() ms
+    lightContrib: number; // added to lightLevel (+0.25 for FUL, +0.5 for OH IR RA, negative for Darkness)
+    expiresAt: number;    // Date.now() ms
+}
+
+// ─── Compute scene light level (0 = dark, 1 = full light) ────────────────────
+export function computeLightLevel(
+    spellLights: SpellLight[],
+    torchBurnStart: Record<string, number>,
+    championEquipment: Record<number, import('../types/game').ChampionEquipment>,
+): number {
+    const now = Date.now();
+
+    // Torch in any champion's hand that hasn't burnt out
+    let torchContrib = 0;
+    outer: for (const equip of Object.values(championEquipment)) {
+        if (!equip) continue;
+        for (const slot of ['rightHand', 'leftHand'] as const) {
+            const item = equip[slot];
+            if (!item || item.category !== 'Weapon' || item.typeId !== 16) continue;
+            const litAt = torchBurnStart[item.id];
+            if (litAt !== undefined && now - litAt < TORCH_LIFETIME_MS) {
+                torchContrib = 1.0;
+                break outer;
+            }
+        }
+    }
+
+    // Active spell contributions (positive = light, negative = darkness)
+    const spellContrib = spellLights
+        .filter(l => l.expiresAt > now)
+        .reduce((sum, l) => sum + l.lightContrib, 0);
+
+    return Math.max(0, Math.min(1, torchContrib + spellContrib));
 }
 
 // ─── Active projectiles (fireball, lightning, poison, plasma) ─────────────────
@@ -60,6 +103,22 @@ export interface Projectile {
     effect: ProjectileEffect;
     damage: [number, number]; // [min, max]
     nextMoveAt: number;  // Date.now() ms — when to advance to next tile
+}
+
+// ─── Party shields (magic shield / fire shield spells) ────────────────────────
+export interface PartyShield {
+    id: string;
+    expiresAt: number;
+    protection: number; // fraction of damage blocked (0.0–1.0)
+    fireOnly: boolean;  // true = fire_shield only, false = all physical
+}
+
+// ─── Footprint trail (footprints spell) ──────────────────────────────────────
+export interface FootprintEntry {
+    x: number;
+    y: number;
+    level: number;
+    ts: number; // Date.now() when placed
 }
 
 // ─── Champion XP (one counter per skill discipline) ───────────────────────────
@@ -568,10 +627,22 @@ interface GameState {
     damageEvents: DamageEvent[];
     /** Doors currently crushing a creature: key → { phase, timer } */
     crushingDoors: Record<string, { phase: 'closing' | 'bouncing'; timer: number }>;
+    /** Timestamp (ms) when each torch item (Weapon typeId 16) was first equipped */
+    torchBurnStart: Record<string, number>;
     /** Active torch / light spells — extend fog visibility until expiry */
     spellLights: SpellLight[];
     /** Flying projectiles (fireball, lightning, …) */
     projectiles: Projectile[];
+    /** Active magic / fire shields — reduce incoming damage */
+    activeShields: PartyShield[];
+    /** Party is invisible until this timestamp (0 = not invisible) */
+    invisibleUntil: number;
+    /** Magic vision active until this timestamp (0 = inactive) */
+    magicVisionUntil: number;
+    /** Footprint spell active until this timestamp (0 = inactive) */
+    footprintsUntil: number;
+    /** Tile positions visited while footprint spell was active */
+    footprintHistory: FootprintEntry[];
 
     moveForward: () => void;
     moveBackward: () => void;
@@ -638,8 +709,14 @@ export const useStore = create<GameState>((set) => ({
     championCombat: {},
     damageEvents: [],
     crushingDoors: {},
+    torchBurnStart: {},
     spellLights: [],
     projectiles: [],
+    activeShields: [],
+    invisibleUntil: 0,
+    magicVisionUntil: 0,
+    footprintsUntil: 0,
+    footprintHistory: [],
 
     moveForward: () => set((state) => {
         if (state.gamePhase !== 'exploration') return state;
@@ -691,7 +768,10 @@ export const useStore = create<GameState>((set) => ({
         }
         const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
         const sensorChanges = triggerFloorSensors(state.level, nx, ny, ss);
-        return { position: [ny, nx] as [number, number], ...sensorChanges };
+        const footprintChanges = Date.now() < state.footprintsUntil
+            ? { footprintHistory: [...state.footprintHistory, { x: nx, y: ny, level: state.level, ts: Date.now() }] }
+            : {};
+        return { position: [ny, nx] as [number, number], ...sensorChanges, ...footprintChanges };
     }),
 
     moveBackward: () => set((state) => {
@@ -705,7 +785,10 @@ export const useStore = create<GameState>((set) => ({
         if (!isWalkable(state.level, ny, nx, state.openDoors)) return state;
         const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
         const sensorChanges = triggerFloorSensors(state.level, nx, ny, ss);
-        return { position: [ny, nx] as [number, number], ...sensorChanges };
+        const footprintChanges = Date.now() < state.footprintsUntil
+            ? { footprintHistory: [...state.footprintHistory, { x: nx, y: ny, level: state.level, ts: Date.now() }] }
+            : {};
+        return { position: [ny, nx] as [number, number], ...sensorChanges, ...footprintChanges };
     }),
 
     strafeLeft: () => set((state) => {
@@ -718,7 +801,10 @@ export const useStore = create<GameState>((set) => ({
         if (state.direction === 'WEST')  ny = y + 1;
         if (!isWalkable(state.level, ny, nx, state.openDoors)) return state;
         const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
-        return { position: [ny, nx] as [number, number], ...triggerFloorSensors(state.level, nx, ny, ss) };
+        const fpL = Date.now() < state.footprintsUntil
+            ? { footprintHistory: [...state.footprintHistory, { x: nx, y: ny, level: state.level, ts: Date.now() }] }
+            : {};
+        return { position: [ny, nx] as [number, number], ...triggerFloorSensors(state.level, nx, ny, ss), ...fpL };
     }),
 
     strafeRight: () => set((state) => {
@@ -731,7 +817,10 @@ export const useStore = create<GameState>((set) => ({
         if (state.direction === 'WEST')  ny = y - 1;
         if (!isWalkable(state.level, ny, nx, state.openDoors)) return state;
         const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
-        return { position: [ny, nx] as [number, number], ...triggerFloorSensors(state.level, nx, ny, ss) };
+        const fpR = Date.now() < state.footprintsUntil
+            ? { footprintHistory: [...state.footprintHistory, { x: nx, y: ny, level: state.level, ts: Date.now() }] }
+            : {};
+        return { position: [ny, nx] as [number, number], ...triggerFloorSensors(state.level, nx, ny, ss), ...fpR };
     }),
 
     turnLeft: () => set((state) => {
@@ -893,9 +982,15 @@ export const useStore = create<GameState>((set) => ({
         const displaced = curEquip[slotKey];
         const newInv = inv.filter(i => i.id !== itemId);
         if (displaced) newInv.push(displaced);
+        // Light a torch the first time it is equipped
+        const isTorch = item.category === 'Weapon' && item.typeId === 16;
+        const torchChanges = isTorch && !state.torchBurnStart[item.id]
+            ? { torchBurnStart: { ...state.torchBurnStart, [item.id]: Date.now() } }
+            : {};
         return {
             championInventories: { ...state.championInventories, [championId]: newInv },
             championEquipment: { ...state.championEquipment, [championId]: { ...curEquip, [slotKey]: item } },
+            ...torchChanges,
         };
     }),
 
@@ -938,6 +1033,11 @@ export const useStore = create<GameState>((set) => ({
             championInventories: { ...state.championInventories, [toChampionId]: [...toInv, item] },
         };
     }),
+
+    // ─── Potion rune → typeId mapping (spell runes without power rune) ──────────
+    // Source: Old_data/game_db.json potionTypes
+    // vi,bro,ra → Health (8) | vi,bro → Antidote (11) | ya → Stamina (9)
+    // ya,bro → Anti-Magic/Shield (17) | zo,bro,ra → Mana (10)
 
     // ─── Spell casting ────────────────────────────────────────────────────────
     castSpell: (championId, runeIds) => set((state) => {
@@ -998,12 +1098,13 @@ export const useStore = create<GameState>((set) => ({
             }
 
             case 'light': {
-                // fogMult: Lo+Ful(1)≈1.12 … Mon+OH+IR+RA(~10)≈2.2
-                const fogMult = 1.0 + Math.min(1.5, spell.manaCost * 0.12);
-                const durationMs = Math.round(spell.manaCost * 20_000);
+                // FUL = +0.25 / 10 min ; OH IR RA = +0.50 / 15 min
+                const isFul = spell.runes.slice(1).join(',') === 'ful';
+                const lightContrib = isFul ? 0.25 : 0.50;
+                const durationMs   = isFul ? 10 * 60_000 : 15 * 60_000;
                 const newLight: SpellLight = {
                     id: `light_${now}_${Math.random().toString(36).slice(2)}`,
-                    fogMult,
+                    lightContrib,
                     expiresAt: now + durationMs,
                 };
                 return {
@@ -1059,6 +1160,107 @@ export const useStore = create<GameState>((set) => ({
                     ...base,
                     championVitals: { ...state.championVitals, [championId]: newVitals },
                     projectiles: [...state.projectiles, newProj],
+                };
+            }
+
+            case 'darkness': {
+                // Negative light contribution — inverse of light
+                const durationMs = 10 * 60_000;
+                const darkEntry: SpellLight = {
+                    id: `dark_${now}_${Math.random().toString(36).slice(2)}`,
+                    lightContrib: -0.5,
+                    expiresAt: now + durationMs,
+                };
+                return {
+                    ...base,
+                    championVitals: { ...state.championVitals, [championId]: newVitals },
+                    spellLights: [...state.spellLights, darkEntry],
+                };
+            }
+
+            case 'shield':
+            case 'fire_shield': {
+                // protection: scales from ~25% (Lo) to ~75% (Mon), capped at 0.75
+                const protection = Math.min(0.75, spell.manaCost * 0.022);
+                const durationMs = Math.round(spell.manaCost * 8_000);
+                const shield: PartyShield = {
+                    id: `shield_${now}_${Math.random().toString(36).slice(2)}`,
+                    expiresAt: now + durationMs,
+                    protection,
+                    fireOnly: spell.effect === 'fire_shield',
+                };
+                return {
+                    ...base,
+                    championVitals: { ...state.championVitals, [championId]: newVitals },
+                    activeShields: [...state.activeShields, shield],
+                };
+            }
+
+            case 'invisibility': {
+                // mana costs (17,25,35,43,53,61) → duration 2m16s … 8m8s
+                const durationMs = spell.manaCost * 8_000;
+                return {
+                    ...base,
+                    championVitals: { ...state.championVitals, [championId]: newVitals },
+                    invisibleUntil: Math.max(state.invisibleUntil, now + durationMs),
+                };
+            }
+
+            case 'magic_vision': {
+                const durationMs = spell.manaCost * 10_000;
+                return {
+                    ...base,
+                    championVitals: { ...state.championVitals, [championId]: newVitals },
+                    magicVisionUntil: Math.max(state.magicVisionUntil, now + durationMs),
+                };
+            }
+
+            case 'footprints': {
+                const durationMs = spell.manaCost * 20_000;
+                return {
+                    ...base,
+                    championVitals: { ...state.championVitals, [championId]: newVitals },
+                    footprintsUntil: Math.max(state.footprintsUntil, now + durationMs),
+                };
+            }
+
+            case 'potion': {
+                // Requires an empty flask (Misc typeId 40) in caster's hand.
+                // Rune combo (sans power rune) determines which potion is created.
+                const POTION_RUNE_MAP: Record<string, number> = {
+                    'ya': 9,            // Stamina Potion
+                    'vi,bro': 11,       // Antidote
+                    'vi,bro,ra': 8,     // Health Potion
+                    'ya,bro': 17,       // Anti-Magic / Shield Potion
+                    'zo,bro,ra': 10,    // Mana Potion
+                };
+                const spellRunes = spell.runes.slice(1).join(',');
+                const potionTypeId = POTION_RUNE_MAP[spellRunes];
+                if (potionTypeId === undefined) {
+                    return { ...base, championVitals: { ...state.championVitals, [championId]: newVitals } };
+                }
+                const equip = state.championEquipment[championId] ?? {};
+                const flaskSlot = (['rightHand', 'leftHand'] as const).find(
+                    slot => equip[slot]?.category === 'Misc' && equip[slot]?.typeId === 40
+                );
+                if (!flaskSlot) {
+                    return {
+                        ...base,
+                        championVitals: { ...state.championVitals, [championId]: newVitals },
+                        lastCastResult: {
+                            success: false,
+                            message: 'Il faut une flasque vide dans la main.',
+                            ts: now,
+                        },
+                    };
+                }
+                const flask = equip[flaskSlot]!;
+                const potion = { ...flask, category: 'Potion' as const, typeId: potionTypeId };
+                const newEquip = { ...equip, [flaskSlot]: potion };
+                return {
+                    ...base,
+                    championVitals: { ...state.championVitals, [championId]: newVitals },
+                    championEquipment: { ...state.championEquipment, [championId]: newEquip },
                 };
             }
 
@@ -1138,7 +1340,7 @@ export const useStore = create<GameState>((set) => ({
         // Damage
         const baseDmg = stats.dmgMin + Math.floor(Math.random() * (stats.dmgMax - stats.dmgMin + 1));
         const strBonus = Math.floor(champion.strength / 10);
-        const totalDmg = Math.max(1, baseDmg + strBonus);
+        const totalDmg = Math.max(1, baseDmg + strBonus); // party attacks creatures — no shield applies here
 
         const newHP = target.currentHP - totalDmg;
         const killed = newHP <= 0;
@@ -1378,7 +1580,9 @@ export const useStore = create<GameState>((set) => ({
             }
 
             // ── Attack ────────────────────────────────────────────────────────
-            if (atkTimer === 0 && adjacent) {
+            const nowMs = Date.now();
+            const partyInvisible = nowMs < state.invisibleUntil;
+            if (atkTimer === 0 && adjacent && !partyInvisible) {
                 atkTimer = atkSec * (0.9 + Math.random() * 0.2);
                 playCreatureAttack(c.typeId);
                 notifyCreatureAction(c.id, 'attack');
@@ -1391,7 +1595,11 @@ export const useStore = create<GameState>((set) => ({
                         const dmgMin = Math.max(1, Math.floor(def.exp / 8));
                         const dmgMax = Math.max(2, Math.floor(def.exp / 4));
                         const raw  = dmgMin + Math.floor(Math.random() * (dmgMax - dmgMin + 1));
-                        const dmg  = Math.max(1, raw);
+                        // Apply non-fire shield protection
+                        const shieldProt = state.activeShields
+                            .filter(s => s.expiresAt > nowMs && !s.fireOnly)
+                            .reduce((max, s) => Math.max(max, s.protection), 0);
+                        const dmg  = Math.max(1, Math.round(raw * (1 - shieldProt)));
                         const newHP = Math.max(0, tv.hp - dmg);
                         vitals = { ...vitals, [target.id]: { ...tv, hp: newHP } };
                         dmgEvts = [...dmgEvts, {
@@ -1484,19 +1692,29 @@ export const useStore = create<GameState>((set) => ({
             keepProjectiles.push({ ...proj, x: nx, y: ny, nextMoveAt: now + 300 });
         }
 
-        const lightsChanged     = spellLights.length !== state.spellLights.length;
-        const projectilesChanged = keepProjectiles.length !== state.projectiles.length ||
-            keepProjectiles.some((p, i) => p !== state.projectiles[i]);
-        const creaturesChanged  = creatures !== state.creatures;
-        const dmgChanged        = dmgEvts !== state.damageEvents;
+        // 3. Clean expired shields
+        const activeShields = state.activeShields.filter(s => s.expiresAt > now);
+        // 4. Clean footprints older than 60 s
+        const footprintHistory = state.footprintHistory.filter(e => now - e.ts < 60_000);
 
-        if (!lightsChanged && !projectilesChanged && !creaturesChanged && !dmgChanged) return state;
+        const lightsChanged       = spellLights.length !== state.spellLights.length;
+        const projectilesChanged  = keepProjectiles.length !== state.projectiles.length ||
+            keepProjectiles.some((p, i) => p !== state.projectiles[i]);
+        const creaturesChanged    = creatures !== state.creatures;
+        const dmgChanged          = dmgEvts !== state.damageEvents;
+        const shieldsChanged      = activeShields.length !== state.activeShields.length;
+        const footprintsChanged   = footprintHistory.length !== state.footprintHistory.length;
+
+        if (!lightsChanged && !projectilesChanged && !creaturesChanged &&
+            !dmgChanged && !shieldsChanged && !footprintsChanged) return state;
 
         return {
             ...(lightsChanged      ? { spellLights }                   : {}),
             ...(projectilesChanged ? { projectiles: keepProjectiles }   : {}),
             ...(creaturesChanged   ? { creatures }                      : {}),
             ...(dmgChanged         ? { damageEvents: dmgEvts }          : {}),
+            ...(shieldsChanged     ? { activeShields }                  : {}),
+            ...(footprintsChanged  ? { footprintHistory }               : {}),
         };
     }),
 
