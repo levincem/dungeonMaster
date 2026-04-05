@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { PerspectiveCamera, Plane, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore, MIRROR_WALL_MAP, MIRROR_FACE_MAP, STAIR_CONNECTIONS } from '../../engine/store';
+import { getMapMechanisms } from '../../data/mechanisms';
 import type { Direction, ProjectileEffect } from '../../engine/store';
 import { getGameMap } from '../../data/mapLoader';
 import type { GameMap, GameTile, TeleporterObject, SensorObject, WallTextObject, CardinalDir, DoorObject } from '../../types/game';
@@ -376,54 +377,40 @@ export const DungeonScene = () => {
         };
 
         const decals: { tileX: number; tileY: number; face: CardinalDir; image: string }[] = [];
+
+        // ── Staircases ─────────────────────────────────────────────────────────
         for (const row of map.tiles) {
             for (const tile of row) {
-                // Staircase back-wall image
-                if (tile.type === 'Stairs') {
-                    const link = STAIR_CONNECTIONS.find(
-                        s => s.fromLevel === level && s.fromY === tile.y && s.fromX === tile.x
-                    );
-                    if (link) {
-                        const face  = stairsBackFace(tile.x, tile.y);
-                        const image = link.toLevel > level ? '/misc/stairs_down.png' : '/misc/stairs_up.png';
-                        decals.push({ tileX: tile.x, tileY: tile.y, face, image });
-                    }
-                }
-                for (const obj of tile.objects) {
-                    if (obj.category === 'Sensor') {
-                        const s = obj as SensorObject;
-                        // Altars and levers only make sense on Wall tiles
-                        if (tile.type !== 'Wall') continue;
-                        if (s.type === 0) {
-                            decals.push({ tileX: tile.x, tileY: tile.y, face: s.tilePos, image: '/misc/autel.png' });
-                        } else if (s.type === 1) {
-                            decals.push({ tileX: tile.x, tileY: tile.y, face: s.tilePos, image: '/misc/levier_haut.png' });
-                        }
-                    } else if (obj.category === 'Door') {
-                        const d = obj as DoorObject;
-                        if (d.ornate >= 1) {
-                            // tilePos is always 'North' in data — not reliable.
-                            // Place lock on both walkable sides based on door orientation.
-                            const sides: [CardinalDir, CardinalDir] =
-                                tile.orientation === 'WestEast'
-                                    ? ['North', 'South']
-                                    : ['East', 'West'];
-                            const ADJ: Record<CardinalDir, [number, number]> = {
-                                North: [0, -1], South: [0, 1], East: [1, 0], West: [-1, 0],
-                            };
-                            for (const dir of sides) {
-                                const [dx, dy] = ADJ[dir];
-                                const adjX = tile.x + dx, adjY = tile.y + dy;
-                                const adjTile = map.tiles[adjY]?.[adjX];
-                                if (adjTile && adjTile.type !== 'Wall') {
-                                    decals.push({ tileX: adjX, tileY: adjY, face: OPPOSITE[dir], image: '/misc/serrure.png' });
-                                }
-                            }
-                        }
-                    }
+                if (tile.type !== 'Stairs') continue;
+                const link = STAIR_CONNECTIONS.find(
+                    s => s.fromLevel === level && s.fromY === tile.y && s.fromX === tile.x
+                );
+                if (link) {
+                    const face  = stairsBackFace(tile.x, tile.y);
+                    const image = link.toLevel > level ? '/misc/stairs_down.png' : '/misc/stairs_up.png';
+                    decals.push({ tileX: tile.x, tileY: tile.y, face, image });
                 }
             }
         }
+
+        // ── Mechanisms from mechanisms.json — exact wall positions ─────────────
+        const seen = new Set<string>(); // deduplicate (x,y,face,image)
+        const add = (tileX: number, tileY: number, face: CardinalDir, image: string) => {
+            const key = `${tileX}_${tileY}_${face}_${image}`;
+            if (!seen.has(key)) { seen.add(key); decals.push({ tileX, tileY, face, image }); }
+        };
+
+        for (const mech of getMapMechanisms(level)) {
+            if (mech.support !== 'Wall') continue;
+            if (mech.kind.includes('Levier')) {
+                add(mech.x, mech.y, mech.face, '/misc/levier_haut.png');
+            } else if (mech.kind.includes('Serrure')) {
+                add(mech.x, mech.y, mech.face, '/misc/serrure.png');
+            } else if (mech.kind.includes('Alcôve')) {
+                add(mech.x, mech.y, mech.face, '/misc/autel.png');
+            }
+        }
+
         return decals;
     }, [map, level]);
 

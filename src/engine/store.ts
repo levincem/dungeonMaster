@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getGameMap, GAME_MAPS, CHAMPION_START_POSITIONS } from '../data/mapLoader';
+import { itemToLockData } from '../data/mechanisms';
 import type {
     GameMap, GameTile, TeleporterObject,
     CreatureInstance, CreatureObject, FloorItem,
@@ -375,8 +376,8 @@ function triggerWallPushSensors(level: number, wx: number, wy: number, dir: stri
         if (obj.category !== 'Sensor') continue;
         const sensor = obj as SensorObject;
         if (sensor.tilePos !== face) continue;
-        // Skip wall-button-on-door (type 2) and lever (type 1) — levers are clicked
-        if (sensor.type === 1 || sensor.type === 2 || sensor.type === 127) continue;
+        // Skip: lever (1), wall-button (2), lock (4 — needs item), special (127)
+        if (sensor.type === 1 || sensor.type === 2 || sensor.type === 4 || sensor.type === 127) continue;
         const effect = computeSensorEffect(sensor, level, cur);
         if (Object.keys(effect).length > 0) {
             cur = { ...cur, ...effect } as SensorState;
@@ -384,6 +385,54 @@ function triggerWallPushSensors(level: number, wx: number, wy: number, dir: stri
         }
     }
     return changed ? cur : {};
+}
+
+/** Try to use an item from party inventory on a type-4 lock sensor.
+ *  Returns updated sensor state + consumed inventory if a matching key was found. */
+function triggerLockSensors(
+    level: number, wx: number, wy: number, face: string, ss: SensorState,
+    inventories: Record<number, FloorItem[]>,
+): { sensorChanges: Partial<SensorState>; newInventories: Record<number, FloorItem[]> | null } {
+    const tile = getMap(level).tiles[wy]?.[wx];
+    if (!tile || tile.type !== 'Wall') return { sensorChanges: {}, newInventories: null };
+    let cur: SensorState = ss;
+    let sensorChanged = false;
+    let newInventories: Record<number, FloorItem[]> | null = null;
+
+    for (const obj of tile.objects) {
+        if (obj.category !== 'Sensor') continue;
+        const sensor = obj as SensorObject;
+        if (sensor.type !== 4 || sensor.tilePos !== face) continue;
+
+        const required = sensor.data;
+        // Find first champion that has the matching item
+        let matchChampId: number | null = null;
+        let matchItemId: string | null = null;
+        for (const [cidStr, inv] of Object.entries(inventories)) {
+            for (const item of inv) {
+                if (itemToLockData(item.category, item.typeId) === required) {
+                    matchChampId = parseInt(cidStr);
+                    matchItemId = item.id;
+                    break;
+                }
+            }
+            if (matchChampId !== null) break;
+        }
+        if (matchChampId === null) continue;
+
+        // Consume the item
+        if (newInventories === null) newInventories = { ...inventories };
+        const inv = newInventories[matchChampId] ?? [];
+        newInventories[matchChampId] = inv.filter(i => i.id !== matchItemId);
+
+        // Fire the sensor
+        const effect = computeSensorEffect(sensor, level, cur);
+        if (Object.keys(effect).length > 0) {
+            cur = { ...cur, ...effect } as SensorState;
+            sensorChanged = true;
+        }
+    }
+    return { sensorChanges: sensorChanged ? cur : {}, newInventories };
 }
 
 function triggerFloorSensors(level: number, x: number, y: number, ss: SensorState): Partial<SensorState> {
@@ -602,8 +651,16 @@ export const useStore = create<GameState>((set) => ({
         if (state.direction === 'WEST')  nx = x - 1;
         if (!isWalkable(state.level, ny, nx, state.openDoors)) {
             const ss: SensorState = { openDoors: state.openDoors, openTeleporters: state.openTeleporters, firedSensors: state.firedSensors, visibleTexts: state.visibleTexts };
+            const face = { NORTH: 'South', SOUTH: 'North', EAST: 'West', WEST: 'East' }[state.direction]!;
             const pushChanges = triggerWallPushSensors(state.level, nx, ny, state.direction, ss);
-            return Object.keys(pushChanges).length > 0 ? pushChanges : state;
+            const pushState = Object.keys(pushChanges).length > 0 ? { ...ss, ...pushChanges } as SensorState : ss;
+            const { sensorChanges, newInventories } = triggerLockSensors(state.level, nx, ny, face, pushState, state.championInventories);
+            const anyChange = Object.keys(pushChanges).length > 0 || Object.keys(sensorChanges).length > 0;
+            if (!anyChange) return state;
+            return {
+                ...sensorChanges,
+                ...(newInventories ? { championInventories: newInventories } : {}),
+            };
         }
         const map = getMap(state.level);
         const tile = map.tiles[ny]?.[nx];
